@@ -19,3 +19,11 @@ impl Hash for GameplayTag {
         self.tag_name.hash(state);
     }
 }
+
+impl GameplayTag {
+    pub fn new(full_name: FName) -> GameplayTag {
+        GameplayTag {
+            tag_name: full_name,
+        }
+    }
+}
