@@ -25,6 +25,7 @@ impl FromWorld for GameplayTagsManager {
         let root = world
             .spawn((
                 GameplayTagNode::new(FName::from("Root"), false),
+                GameplayTagContainer::new(),
                 Name::new("Root Tag Node"),
             ))
             .id();
@@ -105,7 +106,6 @@ impl GameplayTagsManager {
         let parts: Vec<&str> = full_tag_name.split('.').collect();
         let mut current_path = String::new();
         for (index, part) in parts.iter().enumerate() {
-            let is_explicit = index == parts.len() - 1;
             let short_tag_name = part.to_string();
             // 设置当前节点的标签全名 (current_node)
             if index == 0 {
