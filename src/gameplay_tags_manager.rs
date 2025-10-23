@@ -73,10 +73,10 @@ impl GameplayTagsManager {
             let child_entity = self.find_child_by_name(world, current_node_entity, &short_tag_name);
             if let Some(existing_child) = child_entity {
                 current_node_entity = existing_child;
-                if is_explicit {
-                    if let Some(mut node) = world.get_mut::<GameplayTagNode>(current_node_entity) {
-                        node.is_explicit_tag = true;
-                    }
+                if is_explicit
+                    && let Some(mut node) = world.get_mut::<GameplayTagNode>(current_node_entity)
+                {
+                    node.is_explicit_tag = true;
                 }
             } else {
                 let complete_container = self.build_complete_tag_container(&full_tag_string);
@@ -127,10 +127,10 @@ impl GameplayTagsManager {
     fn find_child_by_name(&self, world: &World, parent: Entity, name: &str) -> Option<Entity> {
         if let Some(children) = world.get::<Children>(parent) {
             for child in children.iter() {
-                if let Some(child_node) = world.get::<GameplayTagNode>(*child) {
-                    if child_node.tag_name.as_ref() == name {
-                        return Some(*child);
-                    }
+                if let Some(child_node) = world.get::<GameplayTagNode>(*child)
+                    && child_node.tag_name.as_ref() == name
+                {
+                    return Some(*child);
                 }
             }
         }
