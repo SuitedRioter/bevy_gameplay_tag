@@ -26,9 +26,9 @@ impl Hash for GameplayTag {
 }
 
 impl GameplayTag {
-    pub fn new(full_name: FName) -> GameplayTag {
+    pub fn new(full_name: &str) -> GameplayTag {
         GameplayTag {
-            tag_name: full_name,
+            tag_name: FName::from(full_name),
         }
     }
 

@@ -26,7 +26,7 @@ impl FromWorld for GameplayTagsManager {
             .spawn((
                 GameplayTagNode::new(FName::from("Root"), false),
                 GameplayTagContainer::new(),
-                Name::new("Root Tag Node"),
+                Name::new("Root"),
             ))
             .id();
 
@@ -88,10 +88,10 @@ impl GameplayTagsManager {
                             is_explicit_tag: is_explicit,
                         },
                         ChildOf(current_node_entity),
-                        Name::new(format!("Tag: {}", full_tag_string)),
+                        Name::new(full_tag_string.clone()),
                     ))
                     .id();
-                let gameplay_tag_to_node = GameplayTag::new(FName::from(full_tag_string.clone()));
+                let gameplay_tag_to_node = GameplayTag::new(full_tag_string.clone().as_str());
                 self.tag_map.insert(gameplay_tag_to_node, new_node_entity);
 
                 current_node_entity = new_node_entity;
@@ -101,7 +101,7 @@ impl GameplayTagsManager {
 
     fn build_complete_tag_container(&self, full_tag_name: &str) -> GameplayTagContainer {
         let mut container = GameplayTagContainer::new();
-        let self_tag = GameplayTag::new(FName::from(full_tag_name));
+        let self_tag = GameplayTag::new(full_tag_name);
         container.gameplay_tags.push(self_tag);
         let parts: Vec<&str> = full_tag_name.split('.').collect();
         let mut current_path = String::new();
@@ -116,7 +116,7 @@ impl GameplayTagsManager {
 
             // 跳过最后一个（自己已经添加过了）
             if index < parts.len() - 1 {
-                let parent_tag = GameplayTag::new(FName::from(current_path.clone()));
+                let parent_tag = GameplayTag::new(current_path.clone().as_str());
                 container.parent_tags.push(parent_tag);
             }
         }
