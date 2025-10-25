@@ -3,7 +3,7 @@ use crate::gameplay_tags_manager::GameplayTagsManager;
 use bevy::prelude::Res;
 use bevy::{ecs::world::World, prelude::Component};
 
-#[derive(Component)]
+#[derive(Component, Debug)]
 pub struct GameplayTagContainer {
     pub gameplay_tags: Vec<GameplayTag>,
     pub parent_tags: Vec<GameplayTag>,
@@ -247,5 +247,19 @@ impl GameplayTagContainer {
             }
         }
         filtered_tags
+    }
+
+    /// 返回容器的所有标签，包括显示标签和隐式标签。
+    /// 需要注意，返回的容器只有 gameplay_tags 属性有值，就是标签全部放在 gameplay_tags 属性里面的。
+    pub fn get_gameplay_tag_parents(&self) -> GameplayTagContainer {
+        let mut result_container = GameplayTagContainer::new();
+        result_container.gameplay_tags = self.gameplay_tags.clone();
+        for tag in self.parent_tags.iter() {
+            match result_container.gameplay_tags.binary_search(tag) {
+                Ok(_) => {}
+                Err(index) => result_container.gameplay_tags.insert(index, tag.clone()),
+            }
+        }
+        result_container
     }
 }

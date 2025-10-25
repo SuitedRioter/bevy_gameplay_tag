@@ -53,6 +53,19 @@ impl GameplayTagsManager {
         world.get::<GameplayTagContainer>(*entity)
     }
 
+    pub fn request_gameplay_tag_parents(
+        &self,
+        tag: &GameplayTag,
+        world: &World,
+    ) -> GameplayTagContainer {
+        let parent_tags = self.get_single_tag_container(tag, world);
+        if let Some(exist_tags) = parent_tags {
+            exist_tags.get_gameplay_tag_parents()
+        } else {
+            GameplayTagContainer::new()
+        }
+    }
+
     fn add_tag_node(&mut self, tag_name: String, world: &mut World) {
         let mut current_node_entity = self.root;
         let parts: Vec<&str> = tag_name.split(".").collect();
