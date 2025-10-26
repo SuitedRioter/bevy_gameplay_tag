@@ -44,7 +44,7 @@ impl FromWorld for GameplayTagsManager {
 
 impl GameplayTagsManager {
     pub fn get_single_tag_container(&self, tag: &GameplayTag) -> Option<&GameplayTagContainer> {
-        self.tag_map.get(tag);
+        self.tag_map.get(tag)
     }
 
     pub fn request_gameplay_tag_parents(&self, tag: &GameplayTag) -> GameplayTagContainer {
