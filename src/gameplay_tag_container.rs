@@ -1,7 +1,5 @@
 use crate::gameplay_tag::GameplayTag;
-use crate::gameplay_tags_manager::{GameplayTagNode, GameplayTagsManager};
-use bevy::ecs::query::With;
-use bevy::ecs::system::Query;
+use crate::gameplay_tags_manager::GameplayTagsManager;
 use bevy::prelude::Component;
 use bevy::prelude::Res;
 
@@ -90,45 +88,30 @@ impl GameplayTagContainer {
         }
     }
 
-    pub fn add_tag(
-        &mut self,
-        tag: GameplayTag,
-        tags_manager: &Res<GameplayTagsManager>,
-        query: &Query<&GameplayTagContainer, With<GameplayTagNode>>,
-    ) {
+    pub fn add_tag(&mut self, tag: GameplayTag, tags_manager: &Res<GameplayTagsManager>) {
         if tag.is_valid() {
             match self.gameplay_tags.binary_search(&tag) {
                 Ok(_) => {}
                 Err(index) => {
                     self.gameplay_tags.insert(index, tag.clone());
-                    self.add_parent_tag(tag, tags_manager, query);
+                    self.add_parent_tag(tag, tags_manager);
                 }
             }
         }
     }
 
-    pub fn add_tag_fast(
-        &mut self,
-        tag: GameplayTag,
-        tags_manager: &Res<GameplayTagsManager>,
-        query: &Query<&GameplayTagContainer, With<GameplayTagNode>>,
-    ) {
+    pub fn add_tag_fast(&mut self, tag: GameplayTag, tags_manager: &Res<GameplayTagsManager>) {
         match self.gameplay_tags.binary_search(&tag) {
             Ok(_) => {}
             Err(index) => {
                 self.gameplay_tags.insert(index, tag.clone());
-                self.add_parent_tag(tag, tags_manager, query);
+                self.add_parent_tag(tag, tags_manager);
             }
         }
     }
 
-    pub fn add_parent_tag(
-        &mut self,
-        tag: GameplayTag,
-        tags_manager: &Res<GameplayTagsManager>,
-        query: &Query<&GameplayTagContainer, With<GameplayTagNode>>,
-    ) {
-        let complete_container = tags_manager.get_single_tag_container(&tag, query);
+    pub fn add_parent_tag(&mut self, tag: GameplayTag, tags_manager: &Res<GameplayTagsManager>) {
+        let complete_container = tags_manager.get_single_tag_container(&tag);
         if let Some(exist_container) = complete_container {
             for tag in exist_container.parent_tags.iter() {
                 match self.parent_tags.binary_search(tag) {
@@ -139,14 +122,10 @@ impl GameplayTagContainer {
         }
     }
 
-    pub fn fill_parent_tags(
-        &mut self,
-        tags_manager: &Res<GameplayTagsManager>,
-        query: &Query<&GameplayTagContainer, With<GameplayTagNode>>,
-    ) {
+    pub fn fill_parent_tags(&mut self, tags_manager: &Res<GameplayTagsManager>) {
         self.parent_tags.clear();
         for tag in self.gameplay_tags.iter() {
-            let complete_container = tags_manager.get_single_tag_container(tag, query);
+            let complete_container = tags_manager.get_single_tag_container(tag);
             if let Some(exist_container) = complete_container {
                 for parent_tag in exist_container.parent_tags.iter() {
                     match self.parent_tags.binary_search(parent_tag) {
@@ -163,14 +142,13 @@ impl GameplayTagContainer {
         tag: &GameplayTag,
         defer_parent_tags: bool,
         tags_manager: &Res<GameplayTagsManager>,
-        query: &Query<&GameplayTagContainer, With<GameplayTagNode>>,
     ) -> bool {
         let index = self.find_tag_index(tag);
         match index {
             Some(index) => {
                 self.gameplay_tags.remove(index);
                 if !defer_parent_tags {
-                    self.fill_parent_tags(tags_manager, query);
+                    self.fill_parent_tags(tags_manager);
                 }
                 true
             }
@@ -182,7 +160,6 @@ impl GameplayTagContainer {
         &mut self,
         tags_to_remove: GameplayTagContainer,
         tags_manager: &Res<GameplayTagsManager>,
-        query: &Query<&GameplayTagContainer, With<GameplayTagNode>>,
     ) {
         let mut num_changed = 0;
         for tag in tags_to_remove.gameplay_tags.iter() {
@@ -196,7 +173,7 @@ impl GameplayTagContainer {
             }
         }
         if num_changed > 0 {
-            self.fill_parent_tags(tags_manager, query);
+            self.fill_parent_tags(tags_manager);
         }
     }
 
@@ -205,11 +182,10 @@ impl GameplayTagContainer {
         other_a: &GameplayTagContainer,
         other_b: &GameplayTagContainer,
         tags_manager: &Res<GameplayTagsManager>,
-        query: &Query<&GameplayTagContainer, With<GameplayTagNode>>,
     ) {
         for other_a_tag in other_a.gameplay_tags.iter() {
-            if other_a_tag.matches_any(other_b, tags_manager, query) {
-                self.add_tag(other_a_tag.clone(), tags_manager, query);
+            if other_a_tag.matches_any(other_b, tags_manager) {
+                self.add_tag(other_a_tag.clone(), tags_manager);
             }
         }
     }
@@ -218,10 +194,9 @@ impl GameplayTagContainer {
         &mut self,
         other: &GameplayTagContainer,
         tags_manager: &Res<GameplayTagsManager>,
-        query: &Query<&GameplayTagContainer, With<GameplayTagNode>>,
     ) {
         for tag in other.gameplay_tags.iter() {
-            self.add_tag(tag.clone(), tags_manager, query);
+            self.add_tag(tag.clone(), tags_manager);
         }
     }
 
@@ -229,12 +204,11 @@ impl GameplayTagContainer {
         &self,
         other: &GameplayTagContainer,
         tags_manager: &Res<GameplayTagsManager>,
-        query: &Query<&GameplayTagContainer, With<GameplayTagNode>>,
     ) -> GameplayTagContainer {
         let mut filtered_tags = GameplayTagContainer::new();
         for tag in self.gameplay_tags.iter() {
-            if tag.matches_any(other, tags_manager, query) {
-                filtered_tags.add_tag(tag.clone(), tags_manager, query);
+            if tag.matches_any(other, tags_manager) {
+                filtered_tags.add_tag(tag.clone(), tags_manager);
             }
         }
         filtered_tags
@@ -244,12 +218,11 @@ impl GameplayTagContainer {
         &self,
         other: &GameplayTagContainer,
         tags_manager: &Res<GameplayTagsManager>,
-        query: &Query<&GameplayTagContainer, With<GameplayTagNode>>,
     ) -> GameplayTagContainer {
         let mut filtered_tags = GameplayTagContainer::new();
         for tag in self.gameplay_tags.iter() {
             if tag.matches_any_exact(other) {
-                filtered_tags.add_tag(tag.clone(), tags_manager, query);
+                filtered_tags.add_tag(tag.clone(), tags_manager);
             }
         }
         filtered_tags

@@ -4,18 +4,17 @@ use bevy::{
         entity::Entity,
         event::EntityEvent,
         observer::{ObservedBy, Observer},
-        query::With,
-        system::{Commands, Query, Res},
+        system::{Commands, Res},
         world::World,
     },
     log::warn,
     platform::collections::HashMap,
+    prelude::info,
 };
 
 use crate::{
-    gameplay_tag::GameplayTag,
-    gameplay_tag_container::GameplayTagContainer,
-    gameplay_tags_manager::{GameplayTagNode, GameplayTagsManager},
+    gameplay_tag::GameplayTag, gameplay_tag_container::GameplayTagContainer,
+    gameplay_tags_manager::GameplayTagsManager,
 };
 
 #[derive(Component, Debug)]
@@ -78,7 +77,6 @@ impl GameplayTagCountContainer {
         tags_manager: &Res<GameplayTagsManager>,
         commands: &mut Commands,
         entity: Entity,
-        query: &Query<&GameplayTagContainer, With<GameplayTagNode>>,
     ) {
         if count_delta != 0 {
             let mut updated_any = false;
@@ -89,14 +87,13 @@ impl GameplayTagCountContainer {
                     tags_manager,
                     commands,
                     entity,
-                    query,
                 )
             }
 
             //因为如果是减少，则有可能某个标签为0被删除，而上面update的里面的remove_tag默认使用的是延迟重建父级（defer_parent_tags_on_remove），所以这里要更新父级。
             //如果是增加，上面update的里面的add_tag会自动添加父级，所以不用管
             if updated_any && count_delta < 0 {
-                self.explicit_tags.fill_parent_tags(tags_manager, query);
+                self.explicit_tags.fill_parent_tags(tags_manager);
             }
         }
     }
@@ -108,10 +105,10 @@ impl GameplayTagCountContainer {
         tags_manager: &Res<GameplayTagsManager>,
         commands: &mut Commands,
         entity: Entity,
-        query: &Query<&GameplayTagContainer, With<GameplayTagNode>>,
     ) -> bool {
+        info!("update_tag_count {:?} by {}", tag, count_delta);
         if count_delta != 0 {
-            self.update_tag_map_internal(tag, count_delta, tags_manager, commands, entity, query)
+            self.update_tag_map_internal(tag, count_delta, tags_manager, commands, entity)
         } else {
             false
         }
@@ -124,7 +121,6 @@ impl GameplayTagCountContainer {
         tags_manager: &Res<GameplayTagsManager>,
         commands: &mut Commands,
         entity: Entity,
-        query: &Query<&GameplayTagContainer, With<GameplayTagNode>>,
     ) -> bool {
         if count_delta != 0 {
             self.update_tag_map_deferred_parent_removal_internal(
@@ -133,7 +129,6 @@ impl GameplayTagCountContainer {
                 tags_manager,
                 commands,
                 entity,
-                query,
             )
         } else {
             false
@@ -147,7 +142,6 @@ impl GameplayTagCountContainer {
         tags_manager: &Res<GameplayTagsManager>,
         commands: &mut Commands,
         entity: Entity,
-        query: &Query<&GameplayTagContainer, With<GameplayTagNode>>,
     ) -> bool {
         let mut existing_count = 0;
         if let Some(count) = self.explicit_tag_count_map.get(tag) {
@@ -156,7 +150,7 @@ impl GameplayTagCountContainer {
 
         let count_delta = new_count - existing_count;
         if count_delta != 0 {
-            self.update_tag_map_internal(tag, count_delta, tags_manager, commands, entity, query)
+            self.update_tag_map_internal(tag, count_delta, tags_manager, commands, entity)
         } else {
             false
         }
@@ -193,12 +187,8 @@ impl GameplayTagCountContainer {
         }
     }
 
-    pub fn fill_parent_tags(
-        &mut self,
-        tags_manager: &Res<GameplayTagsManager>,
-        query: &Query<&GameplayTagContainer, With<GameplayTagNode>>,
-    ) {
-        self.explicit_tags.fill_parent_tags(tags_manager, query);
+    pub fn fill_parent_tags(&mut self, tags_manager: &Res<GameplayTagsManager>) {
+        self.explicit_tags.fill_parent_tags(tags_manager);
     }
 
     fn update_tag_map_internal(
@@ -208,19 +198,13 @@ impl GameplayTagCountContainer {
         tags_manager: &Res<GameplayTagsManager>,
         commands: &mut Commands,
         entity: Entity,
-        query: &Query<&GameplayTagContainer, With<GameplayTagNode>>,
     ) -> bool {
-        if !self.update_explicit_tags(tag, count_delta, false, tags_manager, query) {
+        if !self.update_explicit_tags(tag, count_delta, false, tags_manager) {
+            info!("update_tag_map_internal aa {:?} by {}", tag, count_delta);
             false
         } else {
-            self.gather_tag_change_delegates(
-                tag,
-                count_delta,
-                tags_manager,
-                commands,
-                entity,
-                query,
-            )
+            info!("update_tag_map_internal bb {:?} by {}", tag, count_delta);
+            self.gather_tag_change_delegates(tag, count_delta, tags_manager, commands, entity)
         }
     }
 
@@ -231,19 +215,11 @@ impl GameplayTagCountContainer {
         tags_manager: &Res<GameplayTagsManager>,
         commands: &mut Commands,
         entity: Entity,
-        query: &Query<&GameplayTagContainer, With<GameplayTagNode>>,
     ) -> bool {
-        if !self.update_explicit_tags(tag, count_delta, true, tags_manager, query) {
+        if !self.update_explicit_tags(tag, count_delta, true, tags_manager) {
             false
         } else {
-            self.gather_tag_change_delegates(
-                tag,
-                count_delta,
-                tags_manager,
-                commands,
-                entity,
-                query,
-            )
+            self.gather_tag_change_delegates(tag, count_delta, tags_manager, commands, entity)
         }
     }
 
@@ -253,12 +229,11 @@ impl GameplayTagCountContainer {
         count_delta: i32,
         defer_parent_tags_on_remove: bool,
         tags_manager: &Res<GameplayTagsManager>,
-        query: &Query<&GameplayTagContainer, With<GameplayTagNode>>,
     ) -> bool {
         let tag_already_exists = self.explicit_tags.has_tag_exact(&tag);
         if !tag_already_exists {
             if count_delta > 0 {
-                self.explicit_tags.add_tag(tag.clone(), tags_manager, query);
+                self.explicit_tags.add_tag(tag.clone(), tags_manager);
             } else {
                 if self.explicit_tags.has_tag(&tag) {
                     warn!(
@@ -274,7 +249,7 @@ impl GameplayTagCountContainer {
         *existing_count = (*existing_count + count_delta).max(0);
         if *existing_count <= 0 {
             self.explicit_tags
-                .remove_tag(&tag, defer_parent_tags_on_remove, tags_manager, query);
+                .remove_tag(&tag, defer_parent_tags_on_remove, tags_manager);
         }
         true
     }
@@ -295,9 +270,9 @@ impl GameplayTagCountContainer {
         tags_manager: &Res<GameplayTagsManager>,
         commands: &mut Commands,
         entity: Entity,
-        query: &Query<&GameplayTagContainer, With<GameplayTagNode>>,
     ) -> bool {
-        let tag_and_parents_container = tags_manager.request_gameplay_tag_parents(tag, query);
+        info!("gather_tag_change_delegates {:?} by {}", tag, count_delta);
+        let tag_and_parents_container = tags_manager.request_gameplay_tag_parents(tag);
         let mut created_significant_change = false;
 
         for tag in tag_and_parents_container.gameplay_tags.into_iter() {
@@ -308,6 +283,10 @@ impl GameplayTagCountContainer {
             //如果发生重大变化（新增或完全删除），触发相关事件
             let significant_change = old_count == 0 || new_count == 0;
             created_significant_change |= significant_change;
+            info!(
+                "gather_tag_change_delegates significant_change {:?} by {},{},{}",
+                tag, old_count, new_count, tag_count
+            );
             if significant_change {
                 //OnNewOrRemove
                 commands.trigger(OnGameplayEffectTagCountChanged {
@@ -317,6 +296,10 @@ impl GameplayTagCountContainer {
                     event_type: GameplayTagEventType::NewOrRemoved,
                 });
             }
+            info!(
+                "gather_tag_change_delegates OnAnyChange {:?} by {}",
+                tag, new_count
+            );
             //OnAnyChange
             commands.trigger(OnGameplayEffectTagCountChanged {
                 entity,
@@ -325,6 +308,7 @@ impl GameplayTagCountContainer {
                 event_type: GameplayTagEventType::AnyCountChanged,
             });
         }
+
         created_significant_change
     }
 }

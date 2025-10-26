@@ -5,7 +5,7 @@ use bevy_gameplay_tag::{
     gameplay_tag_count_container::{
         GameplayTagCountContainer, GameplayTagEventType, OnGameplayEffectTagCountChanged,
     },
-    gameplay_tags_manager::{GameplayTagNode, GameplayTagsManager},
+    gameplay_tags_manager::GameplayTagsManager,
     gameplay_tags_plugin::GameplayTagsPlugin,
 };
 use bevy_inspector_egui::{bevy_egui::EguiPlugin, quick::WorldInspectorPlugin};
@@ -54,6 +54,7 @@ fn setup(mut commands: Commands) {
 }
 
 fn on_player_tag_changed(trigger: On<OnGameplayEffectTagCountChanged>, query: Query<&Name>) {
+    info!("on_player_tag_changed");
     let event = trigger.event();
     let name = query.get(event.entity).unwrap();
 
@@ -89,7 +90,6 @@ fn on_enemy_tag_changed(trigger: On<OnGameplayEffectTagCountChanged>, query: Que
 
 fn apply_damage_system(
     mut query: Query<(Entity, &Name, &mut GameplayTagCountContainer)>,
-    query_parent_container: Query<&GameplayTagContainer, With<GameplayTagNode>>,
     tags_manager: Res<GameplayTagsManager>,
     mut commands: Commands,
     keyboard: Res<ButtonInput<KeyCode>>,
@@ -105,7 +105,6 @@ fn apply_damage_system(
                     &tags_manager,
                     &mut commands,
                     entity,
-                    &query_parent_container,
                 );
             }
         }
@@ -114,7 +113,6 @@ fn apply_damage_system(
 
 fn apply_buff_system(
     mut query: Query<(Entity, &Name, &mut GameplayTagCountContainer)>,
-    query_parent_container: Query<&GameplayTagContainer, With<GameplayTagNode>>,
     tags_manager: Res<GameplayTagsManager>,
     mut commands: Commands,
     keyboard: Res<ButtonInput<KeyCode>>,
@@ -131,7 +129,6 @@ fn apply_buff_system(
                     &tags_manager,
                     &mut commands,
                     entity,
-                    &query_parent_container,
                 );
             }
         }
@@ -151,7 +148,6 @@ fn apply_buff_system(
                         &tags_manager,
                         &mut commands,
                         entity,
-                        &query_parent_container,
                     );
                 };
             }
@@ -186,22 +182,19 @@ fn display_tag_counts(
 }
 
 #[allow(dead_code)]
-fn test_gameplay_tag_match(
-    tags_manager: Res<GameplayTagsManager>,
-    query_parent_container: Query<&GameplayTagContainer, With<GameplayTagNode>>,
-) {
+fn test_gameplay_tag_match(tags_manager: Res<GameplayTagsManager>) {
     let tag_a_b_c = GameplayTag::new("A.B.C");
     let mut a_tag_container = GameplayTagContainer::new();
-    a_tag_container.add_tag(tag_a_b_c.clone(), &tags_manager, &query_parent_container);
+    a_tag_container.add_tag(tag_a_b_c.clone(), &tags_manager);
 
     let tag_a_b = GameplayTag::new("A.B");
     let tag_d_c_b = GameplayTag::new("D.C.B");
     let mut b_tag_container = GameplayTagContainer::new();
-    b_tag_container.add_tag(tag_a_b.clone(), &tags_manager, &query_parent_container);
-    b_tag_container.add_tag(tag_d_c_b.clone(), &tags_manager, &query_parent_container);
+    b_tag_container.add_tag(tag_a_b.clone(), &tags_manager);
+    b_tag_container.add_tag(tag_d_c_b.clone(), &tags_manager);
 
     let mut other_container = GameplayTagContainer::new();
-    other_container.add_tag(tag_d_c_b, &tags_manager, &query_parent_container);
+    other_container.add_tag(tag_d_c_b, &tags_manager);
 
     let has_tag = a_tag_container.has_tag(&tag_a_b_c); //true
     let has_tag_exact = a_tag_container.has_tag_exact(&tag_a_b); //false
@@ -209,7 +202,7 @@ fn test_gameplay_tag_match(
     let has_any_2 = b_tag_container.has_any(&other_container); //true
     let has_any_exact = b_tag_container.has_any_exact(&other_container); //true
     let has_all = other_container.has_all(&b_tag_container); //false
-    b_tag_container.remove_tag(&tag_a_b, false, &tags_manager, &query_parent_container);
+    b_tag_container.remove_tag(&tag_a_b, false, &tags_manager);
     let has_all_2 = other_container.has_all(&b_tag_container); //true
     let has_all_exact = b_tag_container.has_all(&other_container); //true
 

@@ -1,9 +1,7 @@
 use crate::gameplay_tag::GameplayTag;
 use crate::gameplay_tag_container::GameplayTagContainer;
-use bevy::ecs::query::With;
-use bevy::ecs::system::Query;
 use bevy::platform::collections::HashMap;
-use bevy::prelude::{ChildOf, Children, Component, Entity, FromWorld, Name, Resource, World};
+use bevy::prelude::{ChildOf, Children, Component, Entity, FromWorld, Name, Resource, World, info};
 use serde::{Deserialize, Serialize};
 use std::fs::read_to_string;
 use string_cache::DefaultAtom as FName;
@@ -11,7 +9,7 @@ use string_cache::DefaultAtom as FName;
 #[derive(Resource, Debug)]
 pub struct GameplayTagsManager {
     pub root: Entity,
-    pub tag_map: HashMap<GameplayTag, Entity>,
+    pub tag_map: HashMap<GameplayTag, GameplayTagContainer>,
 }
 
 impl FromWorld for GameplayTagsManager {
@@ -27,7 +25,6 @@ impl FromWorld for GameplayTagsManager {
         let root = world
             .spawn((
                 GameplayTagNode::new(FName::from("Root"), false),
-                GameplayTagContainer::new(),
                 Name::new("Root"),
             ))
             .id();
@@ -46,24 +43,16 @@ impl FromWorld for GameplayTagsManager {
 }
 
 impl GameplayTagsManager {
-    pub fn get_single_tag_container<'w>(
-        &self,
-        tag: &GameplayTag,
-        query: &'w Query<&GameplayTagContainer, With<GameplayTagNode>>,
-    ) -> Option<&'w GameplayTagContainer> {
-        let entity = self.tag_map.get(tag)?;
-        query.get(*entity).ok()
+    pub fn get_single_tag_container(&self, tag: &GameplayTag) -> Option<&GameplayTagContainer> {
+        self.tag_map.get(tag)
     }
 
-    pub fn request_gameplay_tag_parents(
-        &self,
-        tag: &GameplayTag,
-        query: &Query<&GameplayTagContainer, With<GameplayTagNode>>,
-    ) -> GameplayTagContainer {
-        let parent_tags = self.get_single_tag_container(tag, query);
+    pub fn request_gameplay_tag_parents(&self, tag: &GameplayTag) -> GameplayTagContainer {
+        let parent_tags = self.get_single_tag_container(tag);
         if let Some(exist_tags) = parent_tags {
             exist_tags.get_gameplay_tag_parents()
         } else {
+            info!("request_gameplay_tag_parents {:?}", tag);
             GameplayTagContainer::new()
         }
     }
@@ -97,7 +86,6 @@ impl GameplayTagsManager {
                 let complete_container = self.build_complete_tag_container(&full_tag_string);
                 let new_node_entity = world
                     .spawn((
-                        complete_container,
                         GameplayTagNode {
                             tag_name: FName::from(short_tag_name),
                             is_explicit_tag: is_explicit,
@@ -107,7 +95,8 @@ impl GameplayTagsManager {
                     ))
                     .id();
                 let gameplay_tag_to_node = GameplayTag::new(full_tag_string.clone().as_str());
-                self.tag_map.insert(gameplay_tag_to_node, new_node_entity);
+                self.tag_map
+                    .insert(gameplay_tag_to_node, complete_container);
 
                 current_node_entity = new_node_entity;
             }
