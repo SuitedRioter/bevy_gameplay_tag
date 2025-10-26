@@ -1,10 +1,14 @@
-use bevy::{ecs::world::World, prelude::Res};
+use bevy::{
+    ecs::{query::With, system::Query},
+    prelude::Res,
+};
 use std::hash::{Hash, Hasher};
 
 use string_cache::DefaultAtom as FName;
 
 use crate::{
-    gameplay_tag_container::GameplayTagContainer, gameplay_tags_manager::GameplayTagsManager,
+    gameplay_tag_container::GameplayTagContainer,
+    gameplay_tags_manager::{GameplayTagNode, GameplayTagsManager},
 };
 
 #[derive(Debug, Eq, Clone, Ord, PartialOrd)]
@@ -44,9 +48,9 @@ impl GameplayTag {
         &self,
         tag_to_check: &GameplayTag,
         tags_manager: &Res<GameplayTagsManager>,
-        world: &World,
+        query: &Query<&GameplayTagContainer, With<GameplayTagNode>>,
     ) -> bool {
-        let complete_container = tags_manager.get_single_tag_container(self, world);
+        let complete_container = tags_manager.get_single_tag_container(self, query);
         if let Some(exist_container) = complete_container {
             exist_container.has_tag(tag_to_check)
         } else {
@@ -66,9 +70,9 @@ impl GameplayTag {
         &self,
         container_to_check: &GameplayTagContainer,
         tags_manager: &Res<GameplayTagsManager>,
-        world: &World,
+        query: &Query<&GameplayTagContainer, With<GameplayTagNode>>,
     ) -> bool {
-        let complete_container = tags_manager.get_single_tag_container(self, world);
+        let complete_container = tags_manager.get_single_tag_container(self, query);
         if let Some(exist_container) = complete_container {
             exist_container.has_any(container_to_check)
         } else {

@@ -1,5 +1,7 @@
 use crate::gameplay_tag::GameplayTag;
 use crate::gameplay_tag_container::GameplayTagContainer;
+use bevy::ecs::query::With;
+use bevy::ecs::system::Query;
 use bevy::platform::collections::HashMap;
 use bevy::prelude::{ChildOf, Children, Component, Entity, FromWorld, Name, Resource, World};
 use serde::{Deserialize, Serialize};
@@ -47,18 +49,18 @@ impl GameplayTagsManager {
     pub fn get_single_tag_container<'w>(
         &self,
         tag: &GameplayTag,
-        world: &'w World,
+        query: &'w Query<&GameplayTagContainer, With<GameplayTagNode>>,
     ) -> Option<&'w GameplayTagContainer> {
         let entity = self.tag_map.get(tag)?;
-        world.get::<GameplayTagContainer>(*entity)
+        query.get(*entity).ok()
     }
 
     pub fn request_gameplay_tag_parents(
         &self,
         tag: &GameplayTag,
-        world: &World,
+        query: &Query<&GameplayTagContainer, With<GameplayTagNode>>,
     ) -> GameplayTagContainer {
-        let parent_tags = self.get_single_tag_container(tag, world);
+        let parent_tags = self.get_single_tag_container(tag, query);
         if let Some(exist_tags) = parent_tags {
             exist_tags.get_gameplay_tag_parents()
         } else {
@@ -152,7 +154,7 @@ impl GameplayTagsManager {
 }
 
 #[derive(Debug, Component)]
-struct GameplayTagNode {
+pub struct GameplayTagNode {
     //不是标签完整名字，当前节点的名字
     tag_name: FName,
     is_explicit_tag: bool,
