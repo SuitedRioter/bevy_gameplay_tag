@@ -1,7 +1,7 @@
 use crate::gameplay_tag::GameplayTag;
 use crate::gameplay_tag_container::GameplayTagContainer;
 use bevy::platform::collections::HashMap;
-use bevy::prelude::{ChildOf, Children, Component, Entity, FromWorld, Name, Resource, World, info};
+use bevy::prelude::{ChildOf, Children, Component, Entity, FromWorld, Name, Resource, World};
 use serde::{Deserialize, Serialize};
 use std::fs::read_to_string;
 use string_cache::DefaultAtom as FName;
@@ -52,7 +52,6 @@ impl GameplayTagsManager {
         if let Some(exist_tags) = parent_tags {
             exist_tags.get_gameplay_tag_parents()
         } else {
-            info!("request_gameplay_tag_parents {:?}", tag);
             GameplayTagContainer::new()
         }
     }
@@ -180,7 +179,9 @@ impl Default for GameplayTagsSettings {
                 { "tag_name": "D", "description": "Description of D" },
                 { "tag_name": "D.C", "description": "Description of D" },
                 { "tag_name": "D.C.B", "description": "Description of D" },
-                { "tag_name": "A.C.B", "description": "Description of D" }
+                { "tag_name": "A.C.B", "description": "Description of D" },
+                { "tag_name": "Status.Damaged",  "description": "Damaged" },
+                { "tag_name": "Buff.Strength",  "description": "Buff.Strength" }
             ]
             "#
             .to_string(),

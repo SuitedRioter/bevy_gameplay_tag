@@ -54,7 +54,6 @@ fn setup(mut commands: Commands) {
 }
 
 fn on_player_tag_changed(trigger: On<OnGameplayEffectTagCountChanged>, query: Query<&Name>) {
-    info!("on_player_tag_changed");
     let event = trigger.event();
     let name = query.get(event.entity).unwrap();
 

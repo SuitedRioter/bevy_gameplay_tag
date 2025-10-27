@@ -9,7 +9,6 @@ use bevy::{
     },
     log::warn,
     platform::collections::HashMap,
-    prelude::info,
 };
 
 use crate::{
@@ -106,7 +105,6 @@ impl GameplayTagCountContainer {
         commands: &mut Commands,
         entity: Entity,
     ) -> bool {
-        info!("update_tag_count {:?} by {}", tag, count_delta);
         if count_delta != 0 {
             self.update_tag_map_internal(tag, count_delta, tags_manager, commands, entity)
         } else {
@@ -200,10 +198,8 @@ impl GameplayTagCountContainer {
         entity: Entity,
     ) -> bool {
         if !self.update_explicit_tags(tag, count_delta, false, tags_manager) {
-            info!("update_tag_map_internal aa {:?} by {}", tag, count_delta);
             false
         } else {
-            info!("update_tag_map_internal bb {:?} by {}", tag, count_delta);
             self.gather_tag_change_delegates(tag, count_delta, tags_manager, commands, entity)
         }
     }
@@ -271,7 +267,6 @@ impl GameplayTagCountContainer {
         commands: &mut Commands,
         entity: Entity,
     ) -> bool {
-        info!("gather_tag_change_delegates {:?} by {}", tag, count_delta);
         let tag_and_parents_container = tags_manager.request_gameplay_tag_parents(tag);
         let mut created_significant_change = false;
 
@@ -283,10 +278,6 @@ impl GameplayTagCountContainer {
             //如果发生重大变化（新增或完全删除），触发相关事件
             let significant_change = old_count == 0 || new_count == 0;
             created_significant_change |= significant_change;
-            info!(
-                "gather_tag_change_delegates significant_change {:?} by {},{},{}",
-                tag, old_count, new_count, tag_count
-            );
             if significant_change {
                 //OnNewOrRemove
                 commands.trigger(OnGameplayEffectTagCountChanged {
@@ -296,10 +287,6 @@ impl GameplayTagCountContainer {
                     event_type: GameplayTagEventType::NewOrRemoved,
                 });
             }
-            info!(
-                "gather_tag_change_delegates OnAnyChange {:?} by {}",
-                tag, new_count
-            );
             //OnAnyChange
             commands.trigger(OnGameplayEffectTagCountChanged {
                 entity,
