@@ -1,5 +1,5 @@
-use std::fmt::Debug;
 use bevy::prelude::Res;
+use std::fmt::Debug;
 use std::hash::{Hash, Hasher};
 
 use string_cache::DefaultAtom as FName;
@@ -47,7 +47,6 @@ impl GameplayTag {
         !self.tag_name.is_empty()
     }
 
-
     /// Check if the tag is the current tag or the parent tag of the current tag
     ///
     /// # Arguments
@@ -82,7 +81,6 @@ impl GameplayTag {
         }
     }
 
-
     /// Checks if the current tag exactly matches the provided `GameplayTag`.
     ///
     /// # Arguments
@@ -109,7 +107,6 @@ impl GameplayTag {
             self.tag_name == tag_to_check.tag_name
         }
     }
-
 
     ///
     /// Determine whether `container_to_check` contains the current Tag or its parent Tag
@@ -144,7 +141,6 @@ impl GameplayTag {
             false
         }
     }
-
 
     ///
     /// Checks if the current tag is exactly present in the given `GameplayTagContainer`.

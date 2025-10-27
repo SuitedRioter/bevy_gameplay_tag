@@ -32,7 +32,6 @@ impl GameplayTagContainer {
         self.parent_tags.clear();
     }
 
-
     ///
     /// Determines if the current container has a specific gameplay tag.
     /// Includes checking explicit and implicit tags for current container.
@@ -408,8 +407,6 @@ impl GameplayTagContainer {
         filtered_tags
     }
 
-
-
     ///
     /// Returns all labels of the container, including display labels and implicit labels.
     /// Note that only the gameplay_tags attribute of the returned container has a value, that is, all tags are placed in the gameplay_tags attribute.
@@ -432,5 +429,4 @@ impl GameplayTagContainer {
     fn find_tag_index(&self, tag: &GameplayTag) -> Option<usize> {
         self.gameplay_tags.binary_search(tag).ok()
     }
-
 }

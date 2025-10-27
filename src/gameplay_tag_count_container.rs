@@ -203,7 +203,6 @@ impl GameplayTagCountContainer {
         }
     }
 
-
     ///
     /// Updates the count of a specific gameplay tag, deferring the removal of parent tags if necessary.
     ///
@@ -472,7 +471,6 @@ impl GameplayTagCountContainer {
         }
         true
     }
-
 
     ///
     /// Gathers and processes tag change delegates for a given gameplay tag, updating the count of the tag,
