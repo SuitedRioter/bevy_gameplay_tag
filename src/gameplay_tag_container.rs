@@ -599,6 +599,7 @@ impl GameplayTagQueryExpression {
 }
 
 #[derive(Debug)]
+#[allow(dead_code)]
 pub struct GameplayTagQuery {
     expr: GameplayTagQueryExpression,
     description: String,
@@ -647,7 +648,7 @@ impl GameplayTagQuery {
         query
     }
 
-    /// 不匹配任何标签  
+    /// 不匹配任何标签
     pub fn make_query_match_no_tags(tags: &GameplayTagContainer) -> Self {
         let mut expr = GameplayTagQueryExpression::new();
         expr.no_tags_match().add_tags(tags);

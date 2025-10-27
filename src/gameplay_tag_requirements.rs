@@ -1,4 +1,6 @@
-use crate::gameplay_tag_container::{GameplayTagContainer, GameplayTagQuery, GameplayTagQueryExpression};
+use crate::gameplay_tag_container::{
+    GameplayTagContainer, GameplayTagQuery, GameplayTagQueryExpression,
+};
 
 #[derive(Debug)]
 pub struct GameplayTagRequirements {
