@@ -430,3 +430,239 @@ impl GameplayTagContainer {
         self.gameplay_tags.binary_search(tag).ok()
     }
 }
+
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+pub enum GameplayTagQueryExprType {
+    Undefined = 0,
+    AnyTagsMatch,
+    AllTagsMatch,
+    NoTagsMatch,
+    AnyExprMatch,
+    AllExprMatch,
+    NoExprMatch,
+}
+
+#[derive(Debug)]
+pub struct GameplayTagQueryExpression {
+    expr_type: GameplayTagQueryExprType,
+    expr_set: Vec<GameplayTagQueryExpression>,
+    tag_set: Vec<GameplayTag>,
+}
+
+impl Default for GameplayTagQueryExpression {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl GameplayTagQueryExpression {
+    pub fn new() -> Self {
+        GameplayTagQueryExpression {
+            expr_type: GameplayTagQueryExprType::Undefined,
+            expr_set: Vec::new(),
+            tag_set: Vec::new(),
+        }
+    }
+
+    pub fn is_valid(&self) -> bool {
+        match self.expr_type {
+            GameplayTagQueryExprType::Undefined => false,
+            _ => {
+                if self.expr_set.is_empty() && self.tag_set.is_empty() {
+                    false
+                } else {
+                    true
+                }
+            }
+        }
+    }
+
+    pub fn any_tags_match(&mut self) -> &mut Self {
+        self.expr_type = GameplayTagQueryExprType::AnyTagsMatch;
+        self
+    }
+
+    pub fn all_tags_match(&mut self) -> &mut Self {
+        self.expr_type = GameplayTagQueryExprType::AllTagsMatch;
+        self
+    }
+
+    pub fn no_tags_match(&mut self) -> &mut Self {
+        self.expr_type = GameplayTagQueryExprType::NoTagsMatch;
+        self
+    }
+
+    pub fn any_expr_match(&mut self) -> &mut Self {
+        self.expr_type = GameplayTagQueryExprType::AnyExprMatch;
+        self
+    }
+
+    pub fn all_expr_match(&mut self) -> &mut Self {
+        self.expr_type = GameplayTagQueryExprType::AllExprMatch;
+        self
+    }
+
+    pub fn no_expr_match(&mut self) -> &mut Self {
+        self.expr_type = GameplayTagQueryExprType::NoExprMatch;
+        self
+    }
+
+    pub fn uses_tag_set(&self) -> bool {
+        match self.expr_type {
+            GameplayTagQueryExprType::AnyTagsMatch
+            | GameplayTagQueryExprType::AllTagsMatch
+            | GameplayTagQueryExprType::NoTagsMatch => true,
+            _ => false,
+        }
+    }
+
+    pub fn add_tag(&mut self, tag: GameplayTag) -> &mut Self {
+        self.tag_set.push(tag);
+        self
+    }
+
+    pub fn add_tags(&mut self, tags: &GameplayTagContainer) -> &mut Self {
+        for tag in tags.gameplay_tags.iter() {
+            self.tag_set.push(tag.clone());
+        }
+        self
+    }
+
+    ///是否使用表达式expr来判断
+    pub fn uses_expr_set(&self) -> bool {
+        match self.expr_type {
+            GameplayTagQueryExprType::AnyExprMatch
+            | GameplayTagQueryExprType::AllExprMatch
+            | GameplayTagQueryExprType::NoExprMatch => true,
+            _ => false,
+        }
+    }
+
+    pub fn add_expr(&mut self, expr: GameplayTagQueryExpression) -> &mut Self {
+        self.expr_set.push(expr);
+        self
+    }
+
+    pub fn matches(&self, container: &GameplayTagContainer) -> bool {
+        match self.expr_type {
+            GameplayTagQueryExprType::AnyTagsMatch => {
+                for tag in self.tag_set.iter() {
+                    if container.has_tag(tag) {
+                        return true;
+                    }
+                }
+                false
+            }
+            GameplayTagQueryExprType::AllTagsMatch => {
+                for tag in self.tag_set.iter() {
+                    if !container.has_tag(tag) {
+                        return false;
+                    }
+                }
+                true
+            }
+            GameplayTagQueryExprType::NoTagsMatch => {
+                for tag in self.tag_set.iter() {
+                    if container.has_tag(tag) {
+                        return false;
+                    }
+                }
+                true
+            }
+            GameplayTagQueryExprType::AnyExprMatch => {
+                for expr in self.expr_set.iter() {
+                    if expr.matches(container) {
+                        return true;
+                    }
+                }
+                false
+            }
+            GameplayTagQueryExprType::AllExprMatch => {
+                for expr in self.expr_set.iter() {
+                    if !expr.matches(container) {
+                        return false;
+                    }
+                }
+                true
+            }
+            GameplayTagQueryExprType::NoExprMatch => {
+                for expr in self.expr_set.iter() {
+                    if expr.matches(container) {
+                        return false;
+                    }
+                }
+                true
+            }
+            _ => false,
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct GameplayTagQuery {
+    expr: GameplayTagQueryExpression,
+    description: String,
+}
+
+impl Default for GameplayTagQuery {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl GameplayTagQuery {
+    pub fn new() -> Self {
+        GameplayTagQuery {
+            expr: GameplayTagQueryExpression::new(),
+            description: "".to_string(),
+        }
+    }
+
+    pub fn is_empty(&self) -> bool {
+        !self.expr.is_valid()
+    }
+
+    pub fn build(&mut self, expression: GameplayTagQueryExpression) -> &mut Self {
+        self.expr = expression;
+        self
+    }
+
+    /// 匹配任意标签
+    pub fn make_query_match_any_tags(tags: &GameplayTagContainer) -> Self {
+        let mut expr = GameplayTagQueryExpression::new();
+        expr.any_tags_match().add_tags(tags);
+
+        let mut query = Self::new();
+        query.build(expr);
+        query
+    }
+
+    /// 匹配所有标签
+    pub fn make_query_match_all_tags(tags: &GameplayTagContainer) -> Self {
+        let mut expr = GameplayTagQueryExpression::new();
+        expr.all_tags_match().add_tags(tags);
+
+        let mut query = Self::new();
+        query.build(expr);
+        query
+    }
+
+    /// 不匹配任何标签  
+    pub fn make_query_match_no_tags(tags: &GameplayTagContainer) -> Self {
+        let mut expr = GameplayTagQueryExpression::new();
+        expr.no_tags_match().add_tags(tags);
+
+        let mut query = Self::new();
+        query.build(expr);
+        query
+    }
+
+    //如果为空，我们认为就匹配任何标签
+    pub fn matches(&self, container: &GameplayTagContainer) -> bool {
+        if !self.is_empty() {
+            self.expr.matches(container)
+        } else {
+            true
+        }
+    }
+}
