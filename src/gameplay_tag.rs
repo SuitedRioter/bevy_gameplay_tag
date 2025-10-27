@@ -1,3 +1,4 @@
+use std::fmt::Debug;
 use bevy::prelude::Res;
 use std::hash::{Hash, Hasher};
 
@@ -7,7 +8,7 @@ use crate::{
     gameplay_tag_container::GameplayTagContainer, gameplay_tags_manager::GameplayTagsManager,
 };
 
-#[derive(Debug, Eq, Clone, Ord, PartialOrd)]
+#[derive(Eq, Clone, Ord, PartialOrd)]
 pub struct GameplayTag {
     //标签完整名字
     tag_name: FName,
@@ -22,6 +23,12 @@ impl PartialEq for GameplayTag {
 impl Hash for GameplayTag {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.tag_name.hash(state);
+    }
+}
+
+impl Debug for GameplayTag {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.tag_name.as_ref())
     }
 }
 
