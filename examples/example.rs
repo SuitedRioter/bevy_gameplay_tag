@@ -1,4 +1,6 @@
+use std::time::Duration;
 use bevy::prelude::*;
+use bevy::time::common_conditions::on_timer;
 use bevy_gameplay_tag::{
     gameplay_tag::GameplayTag,
     gameplay_tag_container::GameplayTagContainer,
@@ -15,15 +17,16 @@ fn main() {
         .add_plugins(DefaultPlugins)
         .add_plugins(EguiPlugin::default())
         .add_plugins(WorldInspectorPlugin::new())
-        .add_plugins(GameplayTagsPlugin)
+        //.add_plugins(GameplayTagsPlugin::new())
+        .add_plugins(GameplayTagsPlugin::with_data_path("examples/tag_data.json".to_string()))
         .add_systems(Startup, setup)
         .add_systems(
             Update,
             (
-                //test_gameplay_tag_match.run_if(on_timer(Duration::from_millis(200))),
-                apply_damage_system,
-                apply_buff_system,
-                display_tag_counts,
+                test_gameplay_tag_match.run_if(on_timer(Duration::from_millis(200))),
+                //apply_damage_system,
+                //apply_buff_system,
+                //display_tag_counts,
             ),
         )
         .run();
@@ -182,12 +185,12 @@ fn display_tag_counts(
 
 #[allow(dead_code)]
 fn test_gameplay_tag_match(tags_manager: Res<GameplayTagsManager>) {
-    let tag_a_b_c = GameplayTag::new("A.B.C");
+    let tag_a_b_c = GameplayTag::new("Cooldown.Skill.S13");
     let mut a_tag_container = GameplayTagContainer::new();
     a_tag_container.add_tag(tag_a_b_c.clone(), &tags_manager);
 
-    let tag_a_b = GameplayTag::new("A.B");
-    let tag_d_c_b = GameplayTag::new("D.C.B");
+    let tag_a_b = GameplayTag::new("Cooldown.Skill");
+    let tag_d_c_b = GameplayTag::new("Item.Type.SkillFragment");
     let mut b_tag_container = GameplayTagContainer::new();
     b_tag_container.add_tag(tag_a_b.clone(), &tags_manager);
     b_tag_container.add_tag(tag_d_c_b.clone(), &tags_manager);

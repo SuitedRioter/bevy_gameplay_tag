@@ -1,0 +1,487 @@
+[
+  {
+    "tag_name": "Teams.Monster",
+    "description": "怪物队伍",
+    "path": ""
+  },
+  {
+    "tag_name": "Teams.Player",
+    "description": "玩家队伍",
+    "path": ""
+  },
+  {
+    "tag_name": "Ability.Skill.ChiXu",
+    "description": "持续技能",
+    "path": ""
+  },
+  {
+    "tag_name": "Ability.Skill.FaShu",
+    "description": "法术技能",
+    "path": ""
+  },
+  {
+    "tag_name": "Ability.Skill.GuangHuan",
+    "description": "光环技能",
+    "path": ""
+  },
+  {
+    "tag_name": "Ability.Skill.BeiDong",
+    "description": "被动技能",
+    "path": ""
+  },
+  {
+    "tag_name": "Ability.Skill.WuLi",
+    "description": "物理技能",
+    "path": ""
+  },
+  {
+    "tag_name": "Ability.Skill.ActiveSkill",
+    "description": "主动技能",
+    "path": ""
+  },
+  {
+    "tag_name": "Ability.Skill.AttackSkill",
+    "description": "攻击技能",
+    "path": ""
+  },
+  {
+    "tag_name": "Ability.Skill.S1",
+    "description": "1号技能",
+    "path": ""
+  },
+  {
+    "tag_name": "Ability.Skill.S2",
+    "description": "2号技能",
+    "path": ""
+  },
+  {
+    "tag_name": "Ability.Skill.S3",
+    "description": "3号技能",
+    "path": ""
+  },
+  {
+    "tag_name": "Ability.Skill.S4",
+    "description": "4号技能",
+    "path": ""
+  },
+  {
+    "tag_name": "Ability.Skill.S5",
+    "description": "5号技能",
+    "path": ""
+  },
+  {
+    "tag_name": "Ability.Skill.S6",
+    "description": "6号技能",
+    "path": ""
+  },
+  {
+    "tag_name": "Ability.Skill.S7",
+    "description": "7号技能",
+    "path": ""
+  },
+  {
+    "tag_name": "Ability.Skill.S8",
+    "description": "8号技能",
+    "path": ""
+  },
+  {
+    "tag_name": "Ability.Skill.S9",
+    "description": "9号技能",
+    "path": ""
+  },
+  {
+    "tag_name": "Ability.Skill.S10",
+    "description": "10号技能",
+    "path": ""
+  },
+  {
+    "tag_name": "Ability.Skill.S11",
+    "description": "11号技能",
+    "path": ""
+  },
+  {
+    "tag_name": "Ability.Skill.S12",
+    "description": "12号技能",
+    "path": ""
+  },
+  {
+    "tag_name": "Ability.Skill.S13",
+    "description": "13号技能",
+    "path": ""
+  },
+  {
+    "tag_name": "Ability.Skill.S14",
+    "description": "14号技能",
+    "path": ""
+  },
+  {
+    "tag_name": "Ability.Skill.S15",
+    "description": "15号技能",
+    "path": ""
+  },
+  {
+    "tag_name": "Ability.Skill.S16",
+    "description": "16号技能",
+    "path": ""
+  },
+  {
+    "tag_name": "Ability.Skill.S17",
+    "description": "17号技能",
+    "path": ""
+  },
+  {
+    "tag_name": "Ability.Skill.S18",
+    "description": "18号技能",
+    "path": ""
+  },
+  {
+    "tag_name": "Ability.Skill.S19",
+    "description": "19号技能",
+    "path": ""
+  },
+  {
+    "tag_name": "Ability.Skill.S20",
+    "description": "20号技能",
+    "path": ""
+  },
+  {
+    "tag_name": "Ability.Skill.S21",
+    "description": "21号技能",
+    "path": ""
+  },
+  {
+    "tag_name": "Ability.Skill.S22",
+    "description": "22号技能",
+    "path": ""
+  },
+  {
+    "tag_name": "Ability.Skill.S23",
+    "description": "23号技能",
+    "path": ""
+  },
+  {
+    "tag_name": "Ability.Skill.S24",
+    "description": "24号技能",
+    "path": ""
+  },
+  {
+    "tag_name": "Ability.Skill.S25",
+    "description": "25号技能",
+    "path": ""
+  },
+  {
+    "tag_name": "Ability.Skill.S26",
+    "description": "26号技能",
+    "path": ""
+  },
+  {
+    "tag_name": "Ability.Skill.S27",
+    "description": "27号技能",
+    "path": ""
+  },
+  {
+    "tag_name": "Ability.Skill.S28",
+    "description": "28号技能",
+    "path": ""
+  },
+  {
+    "tag_name": "Ability.Skill.S29",
+    "description": "29号技能",
+    "path": ""
+  },
+  {
+    "tag_name": "Ability.Skill.S30",
+    "description": "30号技能",
+    "path": ""
+  },
+  {
+    "tag_name": "Ability.Skill.S31",
+    "description": "31号技能",
+    "path": ""
+  },
+  {
+    "tag_name": "Ability.Skill.S32",
+    "description": "32号技能",
+    "path": ""
+  },
+  {
+    "tag_name": "Ability.Skill.S33",
+    "description": "33号技能",
+    "path": ""
+  },
+  {
+    "tag_name": "Ability.Skill.S34",
+    "description": "34号技能",
+    "path": ""
+  },
+  {
+    "tag_name": "Ability.Skill.S35",
+    "description": "35号技能",
+    "path": ""
+  },
+  {
+    "tag_name": "Ability.Skill.S36",
+    "description": "36号技能",
+    "path": ""
+  },
+  {
+    "tag_name": "Cooldown.Skill.S1",
+    "description": "1号技能冷却标签",
+    "path": ""
+  },
+  {
+    "tag_name": "Cooldown.Skill.S2",
+    "description": "2号技能冷却标签",
+    "path": ""
+  },
+  {
+    "tag_name": "Cooldown.Skill.S3",
+    "description": "3号技能冷却标签",
+    "path": ""
+  },
+  {
+    "tag_name": "Cooldown.Skill.S4",
+    "description": "4号技能冷却标签",
+    "path": ""
+  },
+  {
+    "tag_name": "Cooldown.Skill.S5",
+    "description": "5号技能冷却标签",
+    "path": ""
+  },
+  {
+    "tag_name": "Cooldown.Skill.S6",
+    "description": "6号技能冷却标签",
+    "path": ""
+  },
+  {
+    "tag_name": "Cooldown.Skill.S7",
+    "description": "7号技能冷却标签",
+    "path": ""
+  },
+  {
+    "tag_name": "Cooldown.Skill.S8",
+    "description": "8号技能冷却标签",
+    "path": ""
+  },
+  {
+    "tag_name": "Cooldown.Skill.S9",
+    "description": "9号技能冷却标签",
+    "path": ""
+  },
+  {
+    "tag_name": "Cooldown.Skill.S10",
+    "description": "10号技能冷却标签",
+    "path": ""
+  },
+  {
+    "tag_name": "Cooldown.Skill.S11",
+    "description": "11号技能冷却标签",
+    "path": ""
+  },
+  {
+    "tag_name": "Cooldown.Skill.S12",
+    "description": "12号技能冷却标签",
+    "path": ""
+  },
+  {
+    "tag_name": "Cooldown.Skill.S13",
+    "description": "13号技能冷却标签",
+    "path": ""
+  },
+  {
+    "tag_name": "Cooldown.Skill.S14",
+    "description": "14号技能冷却标签",
+    "path": ""
+  },
+  {
+    "tag_name": "Cooldown.Skill.S15",
+    "description": "15号技能冷却标签",
+    "path": ""
+  },
+  {
+    "tag_name": "Cooldown.Skill.S16",
+    "description": "16号技能冷却标签",
+    "path": ""
+  },
+  {
+    "tag_name": "Cooldown.Skill.S17",
+    "description": "17号技能冷却标签",
+    "path": ""
+  },
+  {
+    "tag_name": "Cooldown.Skill.S18",
+    "description": "18号技能冷却标签",
+    "path": ""
+  },
+  {
+    "tag_name": "Cooldown.Skill.S19",
+    "description": "19号技能冷却标签",
+    "path": ""
+  },
+  {
+    "tag_name": "Cooldown.Skill.S20",
+    "description": "20号技能冷却标签",
+    "path": ""
+  },
+  {
+    "tag_name": "Cooldown.Skill.S21",
+    "description": "21号技能冷却标签",
+    "path": ""
+  },
+  {
+    "tag_name": "Cooldown.Skill.S22",
+    "description": "22号技能冷却标签",
+    "path": ""
+  },
+  {
+    "tag_name": "Cooldown.Skill.S23",
+    "description": "23号技能冷却标签",
+    "path": ""
+  },
+  {
+    "tag_name": "Cooldown.Skill.S24",
+    "description": "24号技能冷却标签",
+    "path": ""
+  },
+  {
+    "tag_name": "Cooldown.Skill.S25",
+    "description": "25号技能冷却标签",
+    "path": ""
+  },
+  {
+    "tag_name": "Cooldown.Skill.S26",
+    "description": "26号技能冷却标签",
+    "path": ""
+  },
+  {
+    "tag_name": "Cooldown.Skill.S27",
+    "description": "27号技能冷却标签",
+    "path": ""
+  },
+  {
+    "tag_name": "Cooldown.Skill.S28",
+    "description": "28号技能冷却标签",
+    "path": ""
+  },
+  {
+    "tag_name": "Cooldown.Skill.S29",
+    "description": "29号技能冷却标签",
+    "path": ""
+  },
+  {
+    "tag_name": "Cooldown.Skill.S30",
+    "description": "30号技能冷却标签",
+    "path": ""
+  },
+  {
+    "tag_name": "Cooldown.Skill.S31",
+    "description": "31号技能冷却标签",
+    "path": ""
+  },
+  {
+    "tag_name": "Cooldown.Skill.S32",
+    "description": "32号技能冷却标签",
+    "path": ""
+  },
+  {
+    "tag_name": "Cooldown.Skill.S33",
+    "description": "33号技能冷却标签",
+    "path": ""
+  },
+  {
+    "tag_name": "Cooldown.Skill.S34",
+    "description": "34号技能冷却标签",
+    "path": ""
+  },
+  {
+    "tag_name": "Cooldown.Skill.S35",
+    "description": "35号技能冷却标签",
+    "path": ""
+  },
+  {
+    "tag_name": "Cooldown.Skill.S36",
+    "description": "36号技能冷却标签",
+    "path": ""
+  },
+  {
+    "tag_name": "Item.Type.Equipment.Weapon",
+    "description": "武器",
+    "path": ""
+  },
+  {
+    "tag_name": "Item.Type.Equipment.Helmet",
+    "description": "头盔",
+    "path": ""
+  },
+  {
+    "tag_name": "Item.Type.Equipment.Clothing",
+    "description": "衣服",
+    "path": ""
+  },
+  {
+    "tag_name": "Item.Type.Equipment.Shoe",
+    "description": "鞋子",
+    "path": ""
+  },
+  {
+    "tag_name": "Item.Type.Equipment.Bracelet",
+    "description": "手镯",
+    "path": ""
+  },
+  {
+    "tag_name": "Item.Type.Equipment.Ring",
+    "description": "戒指",
+    "path": ""
+  },
+  {
+    "tag_name": "Item.Type.Equipment.Gaiter",
+    "description": "护腿",
+    "path": ""
+  },
+  {
+    "tag_name": "Item.Type.Equipment.Handguard",
+    "description": "护手",
+    "path": ""
+  },
+  {
+    "tag_name": "Item.Type.Equipment.Necklace",
+    "description": "项链",
+    "path": ""
+  },
+  {
+    "tag_name": "Item.Type.Prop",
+    "description": "道具",
+    "path": ""
+  },
+  {
+    "tag_name": "Item.Type.Equipment",
+    "description": "装备",
+    "path": ""
+  },
+  {
+    "tag_name": "Item.Type.Material",
+    "description": "材料",
+    "path": ""
+  },
+  {
+    "tag_name": "Item.Type.SkillFragment",
+    "description": "技能碎片",
+    "path": ""
+  },
+  {
+    "tag_name": "Item.Type.YuQiFragment",
+    "description": "御器碎片",
+    "path": ""
+  },
+  {
+    "tag_name": "Item.Interaction.Dismantleable",
+    "description": "可分解物品",
+    "path": ""
+  },
+  {
+    "tag_name": "Item.Interaction.Useable",
+    "description": "可使用物品",
+    "path": ""
+  }
+]

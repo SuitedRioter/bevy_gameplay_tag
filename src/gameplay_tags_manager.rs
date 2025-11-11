@@ -14,12 +14,16 @@ pub struct GameplayTagsManager {
 
 impl FromWorld for GameplayTagsManager {
     fn from_world(world: &mut World) -> Self {
-        let tag_settings = GameplayTagsSettings::default();
-        let tag_data_table: Vec<GameplayTagTableRow> = if !tag_settings.json_data.is_empty() {
-            serde_json::from_str(tag_settings.json_data.as_str()).unwrap()
-        } else {
-            let json_content = read_to_string(&tag_settings.data_path);
+        // 从 world 获取 GameplayTagsSettings 资源
+        let tag_settings = world
+            .remove_resource::<GameplayTagsSettings>()
+            .unwrap_or_default();
+
+        let tag_data_table: Vec<GameplayTagTableRow> = if let Some(data_path) = &tag_settings.data_path {
+            let json_content = read_to_string(data_path);
             serde_json::from_str(json_content.unwrap().as_str()).unwrap()
+        }else {
+            serde_json::from_str(tag_settings.json_data.as_str()).unwrap()
         };
 
         let root = world
@@ -163,9 +167,10 @@ struct GameplayTagTableRow {
     description: String,
 }
 
+#[derive(Resource, Debug)]
 pub struct GameplayTagsSettings {
     pub json_data: String,
-    pub data_path: String,
+    pub data_path: Option<String>,
 }
 
 impl Default for GameplayTagsSettings {
@@ -185,7 +190,7 @@ impl Default for GameplayTagsSettings {
             ]
             "#
             .to_string(),
-            data_path: "gameplay/tag_settings.json".to_string(),
+            data_path: None,
         }
     }
 }
@@ -193,5 +198,12 @@ impl Default for GameplayTagsSettings {
 impl GameplayTagsSettings {
     pub fn new() -> Self {
         GameplayTagsSettings::default()
+    }
+
+    pub fn with_data_path(data_path: String) -> Self {
+        GameplayTagsSettings {
+            data_path: Some(data_path),
+            json_data: String::new(),
+        }
     }
 }

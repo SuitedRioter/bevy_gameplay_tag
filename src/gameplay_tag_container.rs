@@ -3,7 +3,7 @@ use crate::gameplay_tags_manager::GameplayTagsManager;
 use bevy::prelude::Component;
 use bevy::prelude::Res;
 
-#[derive(Component, Debug)]
+#[derive(Component, Debug, Clone)]
 pub struct GameplayTagContainer {
     pub gameplay_tags: Vec<GameplayTag>,
     pub parent_tags: Vec<GameplayTag>,
