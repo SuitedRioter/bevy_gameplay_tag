@@ -25,6 +25,12 @@ pub struct GameplayTagCountContainer {
     explicit_tags: GameplayTagContainer,
 }
 
+impl Default for GameplayTagCountContainer {
+    fn default() -> Self {
+        GameplayTagCountContainer::new()
+    }
+}
+
 impl GameplayTagCountContainer {
     pub fn new() -> Self {
         Self {
@@ -448,12 +454,12 @@ impl GameplayTagCountContainer {
         defer_parent_tags_on_remove: bool,
         tags_manager: &Res<GameplayTagsManager>,
     ) -> bool {
-        let tag_already_exists = self.explicit_tags.has_tag_exact(&tag);
+        let tag_already_exists = self.explicit_tags.has_tag_exact(tag);
         if !tag_already_exists {
             if count_delta > 0 {
                 self.explicit_tags.add_tag(tag.clone(), tags_manager);
             } else {
-                if self.explicit_tags.has_tag(&tag) {
+                if self.explicit_tags.has_tag(tag) {
                     warn!(
                         "试图从标记计数容器中删除标记：{}, 但该标记不在容器中！",
                         tag.get_tag_name()
@@ -467,7 +473,7 @@ impl GameplayTagCountContainer {
         *existing_count = (*existing_count + count_delta).max(0);
         if *existing_count <= 0 {
             self.explicit_tags
-                .remove_tag(&tag, defer_parent_tags_on_remove, tags_manager);
+                .remove_tag(tag, defer_parent_tags_on_remove, tags_manager);
         }
         true
     }

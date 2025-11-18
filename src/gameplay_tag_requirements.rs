@@ -2,21 +2,11 @@ use crate::gameplay_tag_container::{
     GameplayTagContainer, GameplayTagQuery, GameplayTagQueryExpression,
 };
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct GameplayTagRequirements {
     require_tags: GameplayTagContainer,
     ignore_tags: GameplayTagContainer,
     tag_query: GameplayTagQuery,
-}
-
-impl Default for GameplayTagRequirements {
-    fn default() -> Self {
-        GameplayTagRequirements {
-            require_tags: GameplayTagContainer::new(),
-            ignore_tags: GameplayTagContainer::new(),
-            tag_query: GameplayTagQuery::new(),
-        }
-    }
 }
 
 impl GameplayTagRequirements {
@@ -44,11 +34,7 @@ impl GameplayTagRequirements {
         let has_require_met = container_to_check.has_all(&self.require_tags);
         let has_ignore_met = container_to_check.has_any(&self.ignore_tags);
         let has_query_met = self.tag_query.is_empty() || self.tag_query.matches(container_to_check);
-        if has_require_met && !has_ignore_met && has_query_met {
-            true
-        } else {
-            false
-        }
+        has_require_met && !has_ignore_met && has_query_met
     }
 
     pub fn convert_tag_fields_to_tag_query(&self) -> GameplayTagQuery {

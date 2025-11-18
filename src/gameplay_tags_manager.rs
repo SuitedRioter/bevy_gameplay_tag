@@ -19,12 +19,13 @@ impl FromWorld for GameplayTagsManager {
             .remove_resource::<GameplayTagsSettings>()
             .unwrap_or_default();
 
-        let tag_data_table: Vec<GameplayTagTableRow> = if let Some(data_path) = &tag_settings.data_path {
-            let json_content = read_to_string(data_path);
-            serde_json::from_str(json_content.unwrap().as_str()).unwrap()
-        }else {
-            serde_json::from_str(tag_settings.json_data.as_str()).unwrap()
-        };
+        let tag_data_table: Vec<GameplayTagTableRow> =
+            if let Some(data_path) = &tag_settings.data_path {
+                let json_content = read_to_string(data_path);
+                serde_json::from_str(json_content.unwrap().as_str()).unwrap()
+            } else {
+                serde_json::from_str(tag_settings.json_data.as_str()).unwrap()
+            };
 
         let root = world
             .spawn((

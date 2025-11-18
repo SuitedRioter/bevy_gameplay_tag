@@ -1,4 +1,3 @@
-use std::time::Duration;
 use bevy::prelude::*;
 use bevy::time::common_conditions::on_timer;
 use bevy_gameplay_tag::{
@@ -11,6 +10,7 @@ use bevy_gameplay_tag::{
     gameplay_tags_plugin::GameplayTagsPlugin,
 };
 use bevy_inspector_egui::{bevy_egui::EguiPlugin, quick::WorldInspectorPlugin};
+use std::time::Duration;
 
 fn main() {
     App::new()
@@ -18,7 +18,9 @@ fn main() {
         .add_plugins(EguiPlugin::default())
         .add_plugins(WorldInspectorPlugin::new())
         //.add_plugins(GameplayTagsPlugin::new())
-        .add_plugins(GameplayTagsPlugin::with_data_path("examples/tag_data.json".to_string()))
+        .add_plugins(GameplayTagsPlugin::with_data_path(
+            "examples/tag_data.json".to_string(),
+        ))
         .add_systems(Startup, setup)
         .add_systems(
             Update,

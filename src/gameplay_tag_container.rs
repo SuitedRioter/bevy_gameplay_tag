@@ -467,13 +467,7 @@ impl GameplayTagQueryExpression {
     pub fn is_valid(&self) -> bool {
         match self.expr_type {
             GameplayTagQueryExprType::Undefined => false,
-            _ => {
-                if self.expr_set.is_empty() && self.tag_set.is_empty() {
-                    false
-                } else {
-                    true
-                }
-            }
+            _ => !self.expr_set.is_empty() || !self.tag_set.is_empty(),
         }
     }
 
@@ -508,12 +502,12 @@ impl GameplayTagQueryExpression {
     }
 
     pub fn uses_tag_set(&self) -> bool {
-        match self.expr_type {
+        matches!(
+            self.expr_type,
             GameplayTagQueryExprType::AnyTagsMatch
-            | GameplayTagQueryExprType::AllTagsMatch
-            | GameplayTagQueryExprType::NoTagsMatch => true,
-            _ => false,
-        }
+                | GameplayTagQueryExprType::AllTagsMatch
+                | GameplayTagQueryExprType::NoTagsMatch
+        )
     }
 
     pub fn add_tag(&mut self, tag: GameplayTag) -> &mut Self {
@@ -530,12 +524,12 @@ impl GameplayTagQueryExpression {
 
     ///是否使用表达式expr来判断
     pub fn uses_expr_set(&self) -> bool {
-        match self.expr_type {
+        matches!(
+            self.expr_type,
             GameplayTagQueryExprType::AnyExprMatch
-            | GameplayTagQueryExprType::AllExprMatch
-            | GameplayTagQueryExprType::NoExprMatch => true,
-            _ => false,
-        }
+                | GameplayTagQueryExprType::AllExprMatch
+                | GameplayTagQueryExprType::NoExprMatch
+        )
     }
 
     pub fn add_expr(&mut self, expr: GameplayTagQueryExpression) -> &mut Self {
