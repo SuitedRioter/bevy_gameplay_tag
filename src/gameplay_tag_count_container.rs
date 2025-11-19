@@ -67,8 +67,9 @@ impl GameplayTagCountContainer {
     ///
     #[inline]
     pub fn has_matching_gameplay_tag(&self, tag_to_check: &GameplayTag) -> bool {
-        let count = self.gameplay_tag_count_map.get(tag_to_check).copied();
-        count.is_some() && count.unwrap() > 0
+        self.gameplay_tag_count_map
+            .get(tag_to_check)
+            .map_or(false, |&count| count > 0)
     }
 
     ///
@@ -91,8 +92,11 @@ impl GameplayTagCountContainer {
         }
 
         for tag in tag_container.gameplay_tags.iter() {
-            let count = self.gameplay_tag_count_map.get(tag).copied();
-            if count.is_none() || count.unwrap() == 0 {
+            let count_zero_or_not_found = self
+                .gameplay_tag_count_map
+                .get(tag)
+                .map_or(true, |&count| count == 0);
+            if count_zero_or_not_found {
                 return false;
             }
         }
@@ -114,14 +118,17 @@ impl GameplayTagCountContainer {
     /// - The function iterates over each tag in the `tag_container`, checking for its presence and positive count in the current object's `gameplay_tag_count_map`.
     /// - The search stops as soon as a matching tag with a count greater than 0 is found.
     #[inline]
-    pub fn has_any_matching_gameplay_tags(self, tag_container: &GameplayTagContainer) -> bool {
+    pub fn has_any_matching_gameplay_tags(&self, tag_container: &GameplayTagContainer) -> bool {
         if tag_container.is_empty() {
             return false;
         }
 
         for tag in tag_container.gameplay_tags.iter() {
-            let count = self.gameplay_tag_count_map.get(tag).copied();
-            if count.is_some() && count.unwrap() > 0 {
+            let count_gt_zero = self
+                .gameplay_tag_count_map
+                .get(tag)
+                .map_or(false, |&count| count > 0);
+            if count_gt_zero {
                 return true;
             }
         }
