@@ -92,6 +92,7 @@ fn on_enemy_tag_changed(trigger: On<OnGameplayEffectTagCountChanged>, query: Que
     }
 }
 
+#[allow(dead_code)]
 fn apply_damage_system(
     mut query: Query<(Entity, &Name, &mut GameplayTagCountContainer)>,
     tags_manager: Res<GameplayTagsManager>,
@@ -115,6 +116,7 @@ fn apply_damage_system(
     }
 }
 
+#[allow(dead_code)]
 fn apply_buff_system(
     mut query: Query<(Entity, &Name, &mut GameplayTagCountContainer)>,
     tags_manager: Res<GameplayTagsManager>,
@@ -159,6 +161,7 @@ fn apply_buff_system(
     }
 }
 
+#[allow(dead_code)]
 fn display_tag_counts(
     query: Query<(&Name, &GameplayTagCountContainer)>,
     keyboard: Res<ButtonInput<KeyCode>>,

@@ -69,7 +69,7 @@ impl GameplayTagCountContainer {
     pub fn has_matching_gameplay_tag(&self, tag_to_check: &GameplayTag) -> bool {
         self.gameplay_tag_count_map
             .get(tag_to_check)
-            .map_or(false, |&count| count > 0)
+            .is_some_and(|&count| count > 0)
     }
 
     ///
@@ -95,7 +95,7 @@ impl GameplayTagCountContainer {
             let count_zero_or_not_found = self
                 .gameplay_tag_count_map
                 .get(tag)
-                .map_or(true, |&count| count == 0);
+                .is_none_or(|&count| count == 0);
             if count_zero_or_not_found {
                 return false;
             }
@@ -127,7 +127,7 @@ impl GameplayTagCountContainer {
             let count_gt_zero = self
                 .gameplay_tag_count_map
                 .get(tag)
-                .map_or(false, |&count| count > 0);
+                .is_some_and(|&count| count > 0);
             if count_gt_zero {
                 return true;
             }
