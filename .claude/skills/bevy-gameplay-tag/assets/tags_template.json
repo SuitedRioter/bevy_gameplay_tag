@@ -1,0 +1,62 @@
+[
+  {
+    "tag_name": "Ability.Skill.Attack",
+    "description": "Attack skill",
+    "path": ""
+  },
+  {
+    "tag_name": "Ability.Skill.Defend",
+    "description": "Defend skill",
+    "path": ""
+  },
+  {
+    "tag_name": "Status.Stunned",
+    "description": "Stunned status effect",
+    "path": ""
+  },
+  {
+    "tag_name": "Status.Poisoned",
+    "description": "Poisoned status effect",
+    "path": ""
+  },
+  {
+    "tag_name": "Cooldown.Skill.Attack",
+    "description": "Attack skill cooldown",
+    "path": ""
+  },
+  {
+    "tag_name": "Cooldown.Skill.Defend",
+    "description": "Defend skill cooldown",
+    "path": ""
+  },
+  {
+    "tag_name": "Item.Type.Weapon",
+    "description": "Weapon item type",
+    "path": ""
+  },
+  {
+    "tag_name": "Item.Type.Armor",
+    "description": "Armor item type",
+    "path": ""
+  },
+  {
+    "tag_name": "Item.Type.Consumable",
+    "description": "Consumable item type",
+    "path": ""
+  },
+  {
+    "tag_name": "Buff.Strength",
+    "description": "Strength buff",
+    "path": ""
+  },
+  {
+    "tag_name": "Buff.Speed",
+    "description": "Speed buff",
+    "path": ""
+  },
+  {
+    "tag_name": "Debuff.Weakness",
+    "description": "Weakness debuff",
+    "path": ""
+  }
+]
