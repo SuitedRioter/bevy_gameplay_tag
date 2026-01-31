@@ -1,125 +1,355 @@
-# bevy_gameplay_tag：为 Bevy 引擎打造的游戏标签系统
+# Bevy Gameplay Tag
 
-## 项目概述
+A powerful and flexible hierarchical gameplay tag system for the Bevy game engine, inspired by Unreal Engine's Gameplay Tag system.
 
-`bevy_gameplay_tag` 是一个专为 Bevy 游戏引擎设计的 Gameplay Tag 系统实现。该项目受到虚幻引擎（Unreal Engine）的 Gameplay Tag 系统启发，为 Rust 游戏开发者提供了一套强大而灵活的标签管理机制。
+[![Crates.io](https://img.shields.io/crates/v/bevy_gameplay_tag.svg)](https://crates.io/crates/bevy_gameplay_tag)
+[![License](https://img.shields.io/badge/license-MIT%2FApache-blue.svg)](https://github.com/yourusername/bevy_gameplay_tag)
+[![Bevy](https://img.shields.io/badge/Bevy-0.18-blue)](https://bevyengine.org)
 
-## 核心架构
+## Features
 
-### 1. GameplayTag - 标签的基础表示
+- **Hierarchical Tag System**: Create parent-child tag relationships (e.g., `Ability.Skill.Fire`)
+- **Flexible Matching**: Support for both exact and hierarchical tag matching
+- **Reference Counting**: Track tag counts with automatic event notifications
+- **Complex Queries**: Build sophisticated tag queries with boolean logic
+- **Event-Driven**: Observer pattern for responding to tag changes
+- **JSON Configuration**: Define your tag hierarchy in external JSON files
+- **High Performance**: Optimized with string interning and binary search
+- **Type Safe**: Leverages Rust's type system for compile-time safety
 
-项目的核心是 `GameplayTag` 结构体，它使用 `string_cache` 库的 `DefaultAtom` 类型来存储标签名称，这确保了标签的高效存储和比较。
-每个标签都支持层级结构，例如 `A.B.C` 这样的命名方式，其中 `A` 是 `A.B` 的父标签，`A.B` 是 `A.B.C` 的父标签。这种设计允许开发者创建具有继承关系的标签体系。
+## Installation
 
-### 2. GameplayTagsManager - 标签管理中心
+Add this to your `Cargo.toml`:
 
-`GameplayTagsManager` 是整个系统的核心管理器，负责标签的注册、存储和查询。管理器使用树形结构存储标签节点，通过 Bevy 的 ECS 系统将标签以实体-组件的方式组织。它维护了一个 tag_map，将每个标签映射到包含该标签及其所有父标签的完整容器。
-标签数据可以通过 JSON 文件或直接通过代码配置加载，提供了灵活的配置方式。
+```toml
+[dependencies]
+bevy_gameplay_tag = "0.1.0"
+bevy = "0.18"
+```
 
-### 3. GameplayTagContainer - 标签集合
+## Quick Start
 
-`GameplayTagContainer` 是标签的容器类，可以存储多个标签。它内部维护两个集合：`gameplay_tags`（显式标签）和 `parent_tags`（父标签）。
-容器提供了丰富的查询和操作方法，包括：
+### 1. Add the Plugin
 
-- 精确匹配和层级匹配
-- 任意匹配和全部匹配
-- 标签的添加、删除和过滤
+```rust
+use bevy::prelude::*;
+use bevy_gameplay_tag::GameplayTagsPlugin;
 
-所有标签在容器中都是排序存储的，使用二分查找实现高效的查询操作。
+fn main() {
+    App::new()
+        .add_plugins(DefaultPlugins)
+        .add_plugins(GameplayTagsPlugin::default())
+        .run();
+}
+```
 
-### 4. GameplayTagCountContainer - 带计数的标签容器
+### 2. Define Your Tags (JSON)
 
-这是一个更高级的容器实现，为每个标签维护引用计数。这在处理临时效果、Buff/Debuff 等游戏机制时特别有用。 当标签计数发生变化时，系统会自动触发事件，允许其他系统响应这些变化。
-事件系统区分了两种类型的变化：
+Create a `tag_data.json` file:
 
-- `NewOrRemoved`：标签首次添加或完全移除时触发
-- `AnyCountChanged`：任何计数变化时触发
+```json
+{
+  "GameplayTagList": [
+    {
+      "Tag": "Ability",
+      "DevComment": "Root tag for all abilities"
+    },
+    {
+      "Tag": "Ability.Skill",
+      "DevComment": "Skills subcategory"
+    },
+    {
+      "Tag": "Ability.Skill.Fire",
+      "DevComment": "Fire skill"
+    },
+    {
+      "Tag": "Status.Buff",
+      "DevComment": "Positive status effects"
+    },
+    {
+      "Tag": "Status.Debuff",
+      "DevComment": "Negative status effects"
+    }
+  ]
+}
+```
 
-## 核心功能特性
+Load it in your app:
 
-### 1. 层级匹配机制
+```rust
+use bevy_gameplay_tag::{GameplayTagsPlugin, GameplayTagsSettings};
 
-标签支持两种匹配方式：
+App::new()
+    .add_plugins(GameplayTagsPlugin::new("assets/tag_data.json"))
+    .run();
+```
 
-- 精确匹配（Exact Match）：只匹配完全相同的标签
-- 层级匹配（Hierarchical Match）：子标签可以匹配父标签
+### 3. Use Tags in Your Game
 
-例如，如果一个实体有 `A.B.C` 标签，那么查询 `A` 或 `A.B` 时都会匹配成功。
+```rust
+use bevy::prelude::*;
+use bevy_gameplay_tag::*;
 
-### 2. 查询表达式系统
+fn setup(mut commands: Commands) {
+    // Spawn an entity with a tag count container
+    commands.spawn(GameplayTagCountContainer::new());
+}
 
-项目实现了一套强大的查询表达式系统 `GameplayTagQueryExpression`，支持复杂的逻辑组合：
+fn add_tags_system(
+    mut query: Query<(Entity, &mut GameplayTagCountContainer)>,
+    tags_manager: Res<GameplayTagsManager>,
+    mut commands: Commands,
+) {
+    for (entity, mut tag_container) in query.iter_mut() {
+        let fire_skill = GameplayTag::new("Ability.Skill.Fire");
 
-- `AnyTagsMatch`：匹配任意标签
-- `AllTagsMatch`：匹配所有标签
-- `NoTagsMatch`：不匹配任何标签
-- 表达式的嵌套组合
+        // Add a tag (increments count by 1)
+        tag_container.update_tag_count(
+            &fire_skill,
+            1,
+            &tags_manager,
+            &mut commands,
+            entity,
+        );
 
-查询表达式可以递归匹配，支持构建复杂的条件逻辑。
+        // Check if entity has the tag
+        if tag_container.has_matching_gameplay_tag(&fire_skill) {
+            println!("Entity has fire skill!");
+        }
 
-### 3. 标签需求系统
+        // Check parent tags (hierarchical matching)
+        let ability_tag = GameplayTag::new("Ability");
+        if tag_container.has_matching_gameplay_tag(&ability_tag) {
+            println!("Entity has some ability!");
+        }
+    }
+}
+```
 
-`GameplayTagRequirements` 提供了一种声明式的方式来定义标签要求，包括：
+## Core Concepts
 
-- 必需标签（require_tags）
-- 排除标签（ignore_tags）
-- 自定义查询表达式
+### GameplayTag
 
-这对于实现技能系统、状态机等游戏机制非常有用。
+The fundamental building block representing a single tag:
 
-### 4. Bevy ECS 集成
+```rust
+let tag = GameplayTag::new("Ability.Skill.Fire");
 
-项目提供了 `GameplayTagsPlugin`，可以无缝集成到 Bevy 应用中。标签容器可以作为组件附加到实体上，利用 Bevy 的 Observer 模式实现事件监听。
+// Exact matching
+tag.matches_tag_exact(&other_tag);
 
-## 技术实现亮点
+// Hierarchical matching (Fire matches Ability.Skill)
+tag.matches_tag(&parent_tag, &tags_manager);
+```
 
-### 1. 性能优化
+### GameplayTagContainer
 
-- 使用 `string_cache` 库优化字符串存储和比较
-- 所有容器内部使用排序数组和二分查找，确保 O(log n) 的查询复杂度
-- 父标签的延迟更新机制，减少不必要的重建操作
+A collection of tags with query capabilities:
 
-### 2. 类型安全
+```rust
+let mut container = GameplayTagContainer::new();
 
-项目充分利用 Rust 的类型系统，确保标签操作的安全性。所有公共 API 都经过精心设计，避免了常见的运行时错误。
+// Add tags
+container.add_tag(fire_tag, &tags_manager);
+container.add_tag(ice_tag, &tags_manager);
 
-### 3. 灵活的配置系统
+// Query tags
+container.has_tag(&fire_tag);              // Check for tag or parent
+container.has_tag_exact(&fire_tag);        // Exact match only
+container.has_any(&other_container);       // Any intersection
+container.has_all(&required_tags);         // All tags present
+```
 
-标签可以通过 JSON 文件定义，也可以在代码中动态创建。默认配置提供了示例数据，方便快速上手。
+### GameplayTagCountContainer
 
-## 应用场景
+Reference-counted tags with event notifications:
 
-`bevy_gameplay_tag` 适用于多种游戏开发场景：
+```rust
+let mut tag_container = GameplayTagCountContainer::new();
 
-1. 技能系统：使用标签表示技能类型、CD状态、施放条件等
-2. Buff/Debuff系统：通过标签计数管理各种效果的叠加
-3. 状态机：用标签表示游戏对象的各种状态
-4. AI系统：标签可以用于行为树的条件判断
-5. 物品系统：使用标签分类和查询物品属性
+// Increment tag count
+tag_container.update_tag_count(&tag, 1, &tags_manager, &mut commands, entity);
 
-## 依赖关系
+// Decrement tag count
+tag_container.update_tag_count(&tag, -1, &tags_manager, &mut commands, entity);
 
-项目依赖于以下核心库：
+// Set absolute count
+tag_container.set_tag_count(&tag, 5, &tags_manager, &mut commands, entity);
 
-- `bevy 0.17.3`：游戏引擎框架
-- `string_cache`：高效的字符串缓存
-- `serde` 和 `serde_json`：JSON 序列化支持
+// Get current count
+let count = tag_container.get_tag_count(&tag);
+```
 
-## Notes
+### Tag Change Events
 
-这个项目是一个完整的 Gameplay Tag 系统实现，借鉴了虚幻引擎的设计理念，但针对 Rust 和 Bevy 生态进行了适配和优化。项目结构清晰，代码质量高，提供了丰富的 API 文档注释。
+React to tag changes using Bevy's observer pattern:
 
-主要模块包括：
+```rust
+fn setup(mut commands: Commands) {
+    let entity = commands.spawn(GameplayTagCountContainer::new()).id();
 
-- `gameplay_tag.rs`：标签的基础定义
-- `gameplay_tags_manager.rs`：标签管理器
-- `gameplay_tag_container.rs`：标签容器和查询系统
-- `gameplay_tag_count_container.rs`：带计数的标签容器
-- `gameplay_tag_requirements.rs`：标签需求系统
-- `gameplay_tags_plugin.rs`：Bevy 插件集成
+    // Observe tag changes
+    commands.entity(entity).observe(on_tag_changed);
+}
 
-## claude
+fn on_tag_changed(trigger: Trigger<OnGameplayEffectTagCountChanged>) {
+    let event = trigger.event();
 
-集成claude skill,用于claude code使用该库作指导.
+    match event.event_type {
+        GameplayTagEventType::NewOrRemoved => {
+            println!("Tag {} was added or removed", event.tag);
+        }
+        GameplayTagEventType::AnyCountChanged => {
+            println!("Tag {} count changed to {}", event.tag, event.tag_count);
+        }
+    }
+}
+```
 
-项目特别适合需要复杂标签管理和查询机制的游戏项目，如 RPG、MOBA、RTS 等类型的游戏。通过合理使用这个系统，可以大大简化游戏逻辑的实现，提高代码的可维护性和扩展性。
+### Complex Queries
+
+Build sophisticated tag queries with boolean logic:
+
+```rust
+// Create a query expression
+let mut expr = GameplayTagQueryExpression::new();
+expr.all_tags_match()
+    .add_tag(GameplayTag::new("Ability.Skill.Fire"));
+expr.no_tags_match()
+    .add_tag(GameplayTag::new("Status.Debuff.Silence"));
+
+let query = GameplayTagQuery::new(expr);
+
+// Test against a container
+if query.matches(&container) {
+    println!("Entity can cast fire skill!");
+}
+```
+
+### Tag Requirements
+
+Define declarative tag requirements:
+
+```rust
+let mut requirements = GameplayTagRequirements::new();
+
+// Must have these tags
+requirements.require_tags.add_tag(
+    GameplayTag::new("Ability.Skill"),
+    &tags_manager
+);
+
+// Must NOT have these tags
+requirements.ignore_tags.add_tag(
+    GameplayTag::new("Status.Debuff.Silence"),
+    &tags_manager
+);
+
+// Check if requirements are met
+if requirements.requirements_met(&entity_tags) {
+    println!("Can use ability!");
+}
+```
+
+## Use Cases
+
+### Skill System
+
+```rust
+// Define skill tags
+let fire_skill = GameplayTag::new("Ability.Skill.Fire");
+let cooldown = GameplayTag::new("Cooldown.Skill.Fire");
+
+// Cast skill
+tag_container.update_tag_count(&fire_skill, 1, &tags_manager, &mut commands, entity);
+tag_container.update_tag_count(&cooldown, 1, &tags_manager, &mut commands, entity);
+
+// Check if skill is on cooldown
+if tag_container.has_matching_gameplay_tag(&cooldown) {
+    println!("Skill is on cooldown!");
+}
+```
+
+### Buff/Debuff System
+
+```rust
+// Stack buffs with reference counting
+let strength_buff = GameplayTag::new("Status.Buff.Strength");
+
+// Add 3 stacks
+tag_container.update_tag_count(&strength_buff, 3, &tags_manager, &mut commands, entity);
+
+// Get stack count
+let stacks = tag_container.get_tag_count(&strength_buff);
+println!("Strength buff has {} stacks", stacks);
+```
+
+### State Machine
+
+```rust
+// Define states as tags
+let idle = GameplayTag::new("State.Idle");
+let running = GameplayTag::new("State.Running");
+let jumping = GameplayTag::new("State.Jumping");
+
+// Transition states
+tag_container.set_tag_count(&idle, 0, &tags_manager, &mut commands, entity);
+tag_container.set_tag_count(&running, 1, &tags_manager, &mut commands, entity);
+```
+
+### Team/Faction System
+
+```rust
+let player_team = GameplayTag::new("Teams.Player");
+let monster_team = GameplayTag::new("Teams.Monster");
+
+// Check if entities are on the same team
+if entity1_tags.has_any(&entity2_tags) {
+    println!("Same team!");
+}
+```
+
+## Performance
+
+- **String Interning**: Uses `string_cache` for efficient string storage and comparison
+- **Binary Search**: O(log n) tag lookups in sorted containers
+- **Lazy Updates**: Parent tags are updated only when necessary
+- **Efficient Counting**: HashMap-based reference counting
+
+## Examples
+
+Check out the [examples](examples/) directory for complete working examples:
+
+```bash
+cargo run --example example
+```
+
+## Compatibility
+
+| Bevy Version | Plugin Version |
+|--------------|----------------|
+| 0.18         | 0.1.0          |
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+## License
+
+Licensed under either of:
+
+- Apache License, Version 2.0 ([LICENSE-APACHE](LICENSE-APACHE) or http://www.apache.org/licenses/LICENSE-2.0)
+- MIT license ([LICENSE-MIT](LICENSE-MIT) or http://opensource.org/licenses/MIT)
+
+at your option.
+
+## Acknowledgments
+
+This project is inspired by Unreal Engine's Gameplay Tag system, adapted for the Rust and Bevy ecosystem.
+
+## Resources
+
+- [Documentation](https://docs.rs/bevy_gameplay_tag)
+- [Examples](examples/)
+- [Bevy Engine](https://bevyengine.org)
+- [Unreal Engine Gameplay Tags](https://docs.unrealengine.com/en-US/gameplay-tags-in-unreal-engine/)
