@@ -18,6 +18,7 @@
 - **JSON 配置**：在外部 JSON 文件中定义标签层级结构
 - **高性能**：通过字符串驻留和二分查找优化性能
 - **类型安全**：利用 Rust 的类型系统提供编译时安全保障
+- **Claude Code支持**：当其他开发者在他们的项目中使用 Claude Code 时，如果他们安装了这个 skill，让 Claude Code 在处理 bevy_gameplay_tag 相关问题时提供更准确、更专业的帮助！
 
 ## 安装
 
@@ -51,28 +52,28 @@ fn main() {
 
 ```json
 {
-  "GameplayTagList": [
-    {
-      "Tag": "Ability",
-      "DevComment": "所有技能的根标签"
-    },
-    {
-      "Tag": "Ability.Skill",
-      "DevComment": "技能子类别"
-    },
-    {
-      "Tag": "Ability.Skill.Fire",
-      "DevComment": "火焰技能"
-    },
-    {
-      "Tag": "Status.Buff",
-      "DevComment": "正面状态效果"
-    },
-    {
-      "Tag": "Status.Debuff",
-      "DevComment": "负面状态效果"
-    }
-  ]
+    "GameplayTagList": [
+        {
+            "Tag": "Ability",
+            "DevComment": "所有技能的根标签"
+        },
+        {
+            "Tag": "Ability.Skill",
+            "DevComment": "技能子类别"
+        },
+        {
+            "Tag": "Ability.Skill.Fire",
+            "DevComment": "火焰技能"
+        },
+        {
+            "Tag": "Status.Buff",
+            "DevComment": "正面状态效果"
+        },
+        {
+            "Tag": "Status.Debuff",
+            "DevComment": "负面状态效果"
+        }
+    ]
 }
 ```
 
@@ -402,8 +403,8 @@ cargo run --example example
 ## 兼容性
 
 | Bevy 版本 | 插件版本 |
-|-----------|---------|
-| 0.18      | 0.1.0   |
+| --------- | -------- |
+| 0.18      | 0.1.0    |
 
 ## 架构设计
 
@@ -461,15 +462,16 @@ src/
 
 如果你熟悉虚幻引擎的 Gameplay Tag 系统，这里是一些对应关系：
 
-| 虚幻引擎 | bevy_gameplay_tag |
-|---------|-------------------|
-| FGameplayTag | GameplayTag |
-| FGameplayTagContainer | GameplayTagContainer |
-| FGameplayTagQuery | GameplayTagQuery |
-| UGameplayTagsManager | GameplayTagsManager |
+| 虚幻引擎                  | bevy_gameplay_tag         |
+| ------------------------- | ------------------------- |
+| FGameplayTag              | GameplayTag               |
+| FGameplayTagContainer     | GameplayTagContainer      |
+| FGameplayTagQuery         | GameplayTagQuery          |
+| UGameplayTagsManager      | GameplayTagsManager       |
 | GameplayTagCountContainer | GameplayTagCountContainer |
 
 主要区别：
+
 - 使用 Rust 的所有权系统替代 UE 的智能指针
 - 基于 Bevy ECS 而非 UObject 系统
 - 使用 JSON 配置而非 .ini 文件

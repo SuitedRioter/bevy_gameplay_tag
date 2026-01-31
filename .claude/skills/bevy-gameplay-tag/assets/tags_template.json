@@ -1,0 +1,260 @@
+{
+  "GameplayTagList": [
+    {
+      "Tag": "Ability",
+      "DevComment": "Root tag for all abilities"
+    },
+    {
+      "Tag": "Ability.Skill",
+      "DevComment": "Active skills that can be used by entities"
+    },
+    {
+      "Tag": "Ability.Skill.Fire",
+      "DevComment": "Fire-based attack skill"
+    },
+    {
+      "Tag": "Ability.Skill.Ice",
+      "DevComment": "Ice-based attack skill"
+    },
+    {
+      "Tag": "Ability.Skill.Lightning",
+      "DevComment": "Lightning-based attack skill"
+    },
+    {
+      "Tag": "Ability.Skill.Heal",
+      "DevComment": "Healing skill"
+    },
+    {
+      "Tag": "Ability.Passive",
+      "DevComment": "Passive abilities that are always active"
+    },
+    {
+      "Tag": "Ability.Passive.Regeneration",
+      "DevComment": "Passive health regeneration"
+    },
+    {
+      "Tag": "Status",
+      "DevComment": "Root tag for all status effects"
+    },
+    {
+      "Tag": "Status.Buff",
+      "DevComment": "Positive status effects"
+    },
+    {
+      "Tag": "Status.Buff.Strength",
+      "DevComment": "Increases physical damage"
+    },
+    {
+      "Tag": "Status.Buff.Speed",
+      "DevComment": "Increases movement speed"
+    },
+    {
+      "Tag": "Status.Buff.Defense",
+      "DevComment": "Increases damage resistance"
+    },
+    {
+      "Tag": "Status.Debuff",
+      "DevComment": "Negative status effects"
+    },
+    {
+      "Tag": "Status.Debuff.Stunned",
+      "DevComment": "Cannot move or act"
+    },
+    {
+      "Tag": "Status.Debuff.Frozen",
+      "DevComment": "Frozen in place, cannot move"
+    },
+    {
+      "Tag": "Status.Debuff.Poisoned",
+      "DevComment": "Takes damage over time"
+    },
+    {
+      "Tag": "Status.Debuff.Silence",
+      "DevComment": "Cannot use skills"
+    },
+    {
+      "Tag": "Status.Debuff.Weakness",
+      "DevComment": "Reduced physical damage"
+    },
+    {
+      "Tag": "Cooldown",
+      "DevComment": "Root tag for cooldown tracking"
+    },
+    {
+      "Tag": "Cooldown.Skill",
+      "DevComment": "Skill cooldowns"
+    },
+    {
+      "Tag": "Cooldown.Skill.Fire",
+      "DevComment": "Fire skill cooldown"
+    },
+    {
+      "Tag": "Cooldown.Skill.Ice",
+      "DevComment": "Ice skill cooldown"
+    },
+    {
+      "Tag": "Cooldown.Skill.Lightning",
+      "DevComment": "Lightning skill cooldown"
+    },
+    {
+      "Tag": "Cooldown.Skill.Heal",
+      "DevComment": "Heal skill cooldown"
+    },
+    {
+      "Tag": "Item",
+      "DevComment": "Root tag for all items"
+    },
+    {
+      "Tag": "Item.Type",
+      "DevComment": "Item type classification"
+    },
+    {
+      "Tag": "Item.Type.Equipment",
+      "DevComment": "Equipable items"
+    },
+    {
+      "Tag": "Item.Type.Equipment.Weapon",
+      "DevComment": "Weapons"
+    },
+    {
+      "Tag": "Item.Type.Equipment.Armor",
+      "DevComment": "Armor pieces"
+    },
+    {
+      "Tag": "Item.Type.Equipment.Accessory",
+      "DevComment": "Accessories like rings and amulets"
+    },
+    {
+      "Tag": "Item.Type.Consumable",
+      "DevComment": "Consumable items"
+    },
+    {
+      "Tag": "Item.Type.Consumable.Potion",
+      "DevComment": "Potions"
+    },
+    {
+      "Tag": "Item.Type.Consumable.Food",
+      "DevComment": "Food items"
+    },
+    {
+      "Tag": "Item.Type.Material",
+      "DevComment": "Crafting materials"
+    },
+    {
+      "Tag": "Item.Rarity",
+      "DevComment": "Item rarity classification"
+    },
+    {
+      "Tag": "Item.Rarity.Common",
+      "DevComment": "Common items"
+    },
+    {
+      "Tag": "Item.Rarity.Uncommon",
+      "DevComment": "Uncommon items"
+    },
+    {
+      "Tag": "Item.Rarity.Rare",
+      "DevComment": "Rare items"
+    },
+    {
+      "Tag": "Item.Rarity.Epic",
+      "DevComment": "Epic items"
+    },
+    {
+      "Tag": "Item.Rarity.Legendary",
+      "DevComment": "Legendary items"
+    },
+    {
+      "Tag": "Item.Interaction",
+      "DevComment": "Item interaction capabilities"
+    },
+    {
+      "Tag": "Item.Interaction.Useable",
+      "DevComment": "Item can be used"
+    },
+    {
+      "Tag": "Item.Interaction.Dismantleable",
+      "DevComment": "Item can be dismantled for materials"
+    },
+    {
+      "Tag": "Teams",
+      "DevComment": "Team/faction tags"
+    },
+    {
+      "Tag": "Teams.Player",
+      "DevComment": "Player team"
+    },
+    {
+      "Tag": "Teams.Monster",
+      "DevComment": "Monster/enemy team"
+    },
+    {
+      "Tag": "Teams.Neutral",
+      "DevComment": "Neutral entities"
+    },
+    {
+      "Tag": "State",
+      "DevComment": "Entity state tags"
+    },
+    {
+      "Tag": "State.Idle",
+      "DevComment": "Entity is idle"
+    },
+    {
+      "Tag": "State.Moving",
+      "DevComment": "Entity is moving"
+    },
+    {
+      "Tag": "State.Attacking",
+      "DevComment": "Entity is attacking"
+    },
+    {
+      "Tag": "State.Dead",
+      "DevComment": "Entity is dead"
+    },
+    {
+      "Tag": "AI",
+      "DevComment": "AI-related tags"
+    },
+    {
+      "Tag": "AI.State",
+      "DevComment": "AI state machine states"
+    },
+    {
+      "Tag": "AI.State.Patrolling",
+      "DevComment": "AI is patrolling"
+    },
+    {
+      "Tag": "AI.State.Chasing",
+      "DevComment": "AI is chasing target"
+    },
+    {
+      "Tag": "AI.State.Alert",
+      "DevComment": "AI is on alert"
+    },
+    {
+      "Tag": "AI.Perception",
+      "DevComment": "AI perception tags"
+    },
+    {
+      "Tag": "AI.Perception.CanSeePlayer",
+      "DevComment": "AI can see the player"
+    },
+    {
+      "Tag": "AI.Perception.CanHearPlayer",
+      "DevComment": "AI can hear the player"
+    },
+    {
+      "Tag": "Resource",
+      "DevComment": "Resource tags"
+    },
+    {
+      "Tag": "Resource.Mana",
+      "DevComment": "Entity has mana resource"
+    },
+    {
+      "Tag": "Resource.Stamina",
+      "DevComment": "Entity has stamina resource"
+    }
+  ]
+}
