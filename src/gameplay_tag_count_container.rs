@@ -16,7 +16,7 @@ use crate::{
     gameplay_tags_manager::GameplayTagsManager,
 };
 
-#[derive(Component, Debug)]
+#[derive(Component, Debug, PartialEq)]
 pub struct GameplayTagCountContainer {
     //所有标签的计数，包括父标签，比如添加A.B,这里就不仅A.B计数+1，父标签A也会+1
     gameplay_tag_count_map: HashMap<GameplayTag, i32>,

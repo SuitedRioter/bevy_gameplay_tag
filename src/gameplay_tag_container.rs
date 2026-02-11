@@ -3,7 +3,7 @@ use crate::gameplay_tags_manager::GameplayTagsManager;
 use bevy::prelude::Component;
 use bevy::prelude::Res;
 
-#[derive(Component, Debug, Clone)]
+#[derive(Component, Debug, Clone, PartialEq)]
 pub struct GameplayTagContainer {
     pub gameplay_tags: Vec<GameplayTag>,
     pub parent_tags: Vec<GameplayTag>,
@@ -442,7 +442,7 @@ pub enum GameplayTagQueryExprType {
     NoExprMatch,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct GameplayTagQueryExpression {
     expr_type: GameplayTagQueryExprType,
     expr_set: Vec<GameplayTagQueryExpression>,
@@ -592,7 +592,7 @@ impl GameplayTagQueryExpression {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Clone)]
 #[allow(dead_code)]
 pub struct GameplayTagQuery {
     expr: GameplayTagQueryExpression,

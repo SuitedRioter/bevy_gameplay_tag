@@ -2,7 +2,7 @@ use crate::gameplay_tag_container::{
     GameplayTagContainer, GameplayTagQuery, GameplayTagQueryExpression,
 };
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, PartialEq, Clone)]
 pub struct GameplayTagRequirements {
     require_tags: GameplayTagContainer,
     ignore_tags: GameplayTagContainer,
