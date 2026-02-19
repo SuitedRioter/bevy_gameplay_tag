@@ -22,7 +22,7 @@ pub struct GameplayTagCountContainer {
     gameplay_tag_count_map: HashMap<GameplayTag, i32>,
     //显示标签计数，只添加标签本身计数，不包括父标签。比如添加A.B,这里就只有A.B计数+1
     explicit_tag_count_map: HashMap<GameplayTag, i32>,
-    explicit_tags: GameplayTagContainer,
+    pub explicit_tags: GameplayTagContainer,
 }
 
 impl Default for GameplayTagCountContainer {
