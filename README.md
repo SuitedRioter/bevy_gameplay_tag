@@ -2,9 +2,10 @@
 
 A powerful and flexible hierarchical gameplay tag system for the Bevy game engine, inspired by Unreal Engine's Gameplay Tag system.
 
-[![Crates.io](https://img.shields.io/crates/v/bevy_gameplay_tag.svg)](https://crates.io/crates/bevy_gameplay_tag)
-[![License](https://img.shields.io/badge/license-MIT%2FApache-blue.svg)](https://github.com/yourusername/bevy_gameplay_tag)
+[![License](https://img.shields.io/badge/license-MIT%2FApache-blue.svg)](LICENSE-MIT)
 [![Bevy](https://img.shields.io/badge/Bevy-0.18-blue)](https://bevyengine.org)
+
+[English](README.md) | [简体中文](README_zh.md)
 
 ## Features
 
@@ -23,7 +24,7 @@ Add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-bevy_gameplay_tag = "0.1.0"
+bevy_gameplay_tag = { git = "https://github.com/SuitedRioter/bevy_gameplay_tag.git" }
 bevy = "0.18"
 ```
 
@@ -324,15 +325,24 @@ Check out the [examples](examples/) directory for complete working examples:
 cargo run --example example
 ```
 
+## Architecture
+
+```
+src/
+├── lib.rs                          # Module exports
+├── gameplay_tag.rs                 # Core tag definition
+├── gameplay_tags_manager.rs        # Tag manager
+├── gameplay_tag_container.rs       # Tag container and query system
+├── gameplay_tag_count_container.rs # Reference-counted tag container
+├── gameplay_tag_requirements.rs    # Tag requirements system
+└── gameplay_tags_plugin.rs         # Bevy plugin integration
+```
+
 ## Compatibility
 
 | Bevy Version | Plugin Version |
 |--------------|----------------|
 | 0.18         | 0.1.0          |
-
-## Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## License
 
@@ -346,10 +356,3 @@ at your option.
 ## Acknowledgments
 
 This project is inspired by Unreal Engine's Gameplay Tag system, adapted for the Rust and Bevy ecosystem.
-
-## Resources
-
-- [Documentation](https://docs.rs/bevy_gameplay_tag)
-- [Examples](examples/)
-- [Bevy Engine](https://bevyengine.org)
-- [Unreal Engine Gameplay Tags](https://docs.unrealengine.com/en-US/gameplay-tags-in-unreal-engine/)

@@ -2,11 +2,10 @@
 
 一个为 Bevy 游戏引擎设计的强大而灵活的层级游戏标签系统，灵感来源于虚幻引擎的 Gameplay Tag 系统。
 
-[![Crates.io](https://img.shields.io/crates/v/bevy_gameplay_tag.svg)](https://crates.io/crates/bevy_gameplay_tag)
-[![License](https://img.shields.io/badge/license-MIT%2FApache-blue.svg)](https://github.com/yourusername/bevy_gameplay_tag)
+[![License](https://img.shields.io/badge/license-MIT%2FApache-blue.svg)](LICENSE-MIT)
 [![Bevy](https://img.shields.io/badge/Bevy-0.18-blue)](https://bevyengine.org)
 
-[English](README.md) | 简体中文
+[English](README.md) | [简体中文](README_zh.md)
 
 ## 特性
 
@@ -18,7 +17,6 @@
 - **JSON 配置**：在外部 JSON 文件中定义标签层级结构
 - **高性能**：通过字符串驻留和二分查找优化性能
 - **类型安全**：利用 Rust 的类型系统提供编译时安全保障
-- **Claude Code支持**：当其他开发者在他们的项目中使用 Claude Code 时，如果他们安装了这个 skill，让 Claude Code 在处理 bevy_gameplay_tag 相关问题时提供更准确、更专业的帮助！
 
 ## 安装
 
@@ -26,7 +24,7 @@
 
 ```toml
 [dependencies]
-bevy_gameplay_tag = "0.1.0"
+bevy_gameplay_tag = { git = "https://github.com/SuitedRioter/bevy_gameplay_tag.git" }
 bevy = "0.18"
 ```
 
@@ -458,48 +456,34 @@ src/
 3. **批量操作**：尽可能批量添加或移除标签
 4. **合理使用事件**：只在必要时监听标签变化事件
 
-## 与虚幻引擎的对比
+## 架构设计
 
-如果你熟悉虚幻引擎的 Gameplay Tag 系统，这里是一些对应关系：
+### 模块结构
 
-| 虚幻引擎                  | bevy_gameplay_tag         |
-| ------------------------- | ------------------------- |
-| FGameplayTag              | GameplayTag               |
-| FGameplayTagContainer     | GameplayTagContainer      |
-| FGameplayTagQuery         | GameplayTagQuery          |
-| UGameplayTagsManager      | GameplayTagsManager       |
-| GameplayTagCountContainer | GameplayTagCountContainer |
-
-主要区别：
-
-- 使用 Rust 的所有权系统替代 UE 的智能指针
-- 基于 Bevy ECS 而非 UObject 系统
-- 使用 JSON 配置而非 .ini 文件
-- 事件系统基于 Bevy 的 Observer 模式
-
-## 贡献
-
-欢迎贡献！请随时提交 Pull Request。
-
-### 开发指南
-
-```bash
-# 克隆仓库
-git clone https://github.com/yourusername/bevy_gameplay_tag.git
-cd bevy_gameplay_tag
-
-# 运行测试
-cargo test
-
-# 运行示例
-cargo run --example example
-
-# 检查代码格式
-cargo fmt --check
-
-# 运行 Clippy
-cargo clippy
 ```
+src/
+├── lib.rs                          # 模块导出
+├── gameplay_tag.rs                 # 核心标签定义
+├── gameplay_tags_manager.rs        # 标签管理器
+├── gameplay_tag_container.rs       # 标签容器和查询系统
+├── gameplay_tag_count_container.rs # 引用计数标签容器
+├── gameplay_tag_requirements.rs    # 标签需求系统
+└── gameplay_tags_plugin.rs         # Bevy 插件集成
+```
+
+### 设计理念
+
+1. **层级结构**：标签使用点号分隔的层级命名（如 `A.B.C`），自动建立父子关系
+2. **引用计数**：支持标签的叠加效果，适用于 Buff/Debuff 等需要计数的场景
+3. **事件驱动**：标签变化时自动触发事件，便于其他系统响应
+4. **查询灵活**：支持精确匹配、层级匹配、布尔逻辑组合等多种查询方式
+5. **ECS 集成**：完全基于 Bevy 的 ECS 架构，充分利用组件系统的优势
+
+## 兼容性
+
+| Bevy 版本 | 插件版本 |
+| --------- | -------- |
+| 0.18      | 0.1.0    |
 
 ## 许可证
 
@@ -513,32 +497,3 @@ cargo clippy
 ## 致谢
 
 本项目灵感来源于虚幻引擎的 Gameplay Tag 系统，并针对 Rust 和 Bevy 生态系统进行了改编和优化。
-
-## 资源链接
-
-- [在线文档](https://docs.rs/bevy_gameplay_tag)
-- [示例代码](examples/)
-- [Bevy 引擎](https://bevyengine.org)
-- [虚幻引擎 Gameplay Tags 文档](https://docs.unrealengine.com/en-US/gameplay-tags-in-unreal-engine/)
-
-## 常见问题
-
-### Q: 标签的层级匹配是如何工作的？
-
-A: 当你查询一个父标签时，所有拥有该父标签的子标签都会匹配。例如，如果实体有 `Ability.Skill.Fire` 标签，查询 `Ability` 或 `Ability.Skill` 都会返回 true。
-
-### Q: 什么时候使用 GameplayTagContainer vs GameplayTagCountContainer？
-
-A: 如果你只需要简单的标签存在性检查，使用 `GameplayTagContainer`。如果需要跟踪标签的数量（如 Buff 层数）或需要事件通知，使用 `GameplayTagCountContainer`。
-
-### Q: 如何动态添加新标签？
-
-A: 标签在首次使用时会自动注册到 `GameplayTagsManager`。你也可以通过 JSON 文件预定义所有标签。
-
-### Q: 性能如何？
-
-A: 系统使用字符串驻留和二分查找优化，标签查询的时间复杂度为 O(log n)。对于大多数游戏场景，性能表现优秀。
-
-### Q: 可以在运行时修改标签层级结构吗？
-
-A: 标签的层级关系在创建时确定。虽然可以动态添加新标签，但不建议在运行时修改已有标签的层级关系。

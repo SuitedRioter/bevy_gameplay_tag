@@ -2,6 +2,7 @@ use crate::gameplay_tag::GameplayTag;
 use crate::gameplay_tag_container::GameplayTagContainer;
 use bevy::platform::collections::HashMap;
 use bevy::prelude::{ChildOf, Children, Component, Entity, FromWorld, Name, Resource, World};
+use bevy::log::error;
 use serde::{Deserialize, Serialize};
 use std::fs::read_to_string;
 use string_cache::DefaultAtom as FName;
@@ -14,17 +15,33 @@ pub struct GameplayTagsManager {
 
 impl FromWorld for GameplayTagsManager {
     fn from_world(world: &mut World) -> Self {
-        // 从 world 获取 GameplayTagsSettings 资源
         let tag_settings = world
             .remove_resource::<GameplayTagsSettings>()
             .unwrap_or_default();
 
         let tag_data_table: Vec<GameplayTagTableRow> =
             if let Some(data_path) = &tag_settings.data_path {
-                let json_content = read_to_string(data_path);
-                serde_json::from_str(json_content.unwrap().as_str()).unwrap()
+                match read_to_string(data_path) {
+                    Ok(json_content) => match serde_json::from_str(&json_content) {
+                        Ok(data) => data,
+                        Err(e) => {
+                            error!("Failed to parse tag data from {}: {}", data_path, e);
+                            Vec::new()
+                        }
+                    },
+                    Err(e) => {
+                        error!("Failed to read tag data file {}: {}", data_path, e);
+                        Vec::new()
+                    }
+                }
             } else {
-                serde_json::from_str(tag_settings.json_data.as_str()).unwrap()
+                match serde_json::from_str(&tag_settings.json_data) {
+                    Ok(data) => data,
+                    Err(e) => {
+                        error!("Failed to parse tag data from json_data: {}", e);
+                        Vec::new()
+                    }
+                }
             };
 
         let root = world
