@@ -2,6 +2,15 @@
 name = "bevy_gameplay_tag"
 version = "0.1.0"
 edition = "2024"
+authors = ["SuitedRioter"]
+description = "A flexible gameplay tag system for Bevy, inspired by Unreal Engine's Gameplay Tags"
+license = "MIT"
+repository = "https://github.com/SuitedRioter/bevy_gameplay_tag"
+homepage = "https://github.com/SuitedRioter/bevy_gameplay_tag"
+documentation = "https://docs.rs/bevy_gameplay_tag"
+readme = "README.md"
+keywords = ["bevy", "gamedev", "gameplay", "tags", "ecs"]
+categories = ["game-development", "game-engines"]
 
 [dependencies]
 bevy = "0.18.0"
