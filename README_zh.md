@@ -24,7 +24,7 @@
 
 ```toml
 [dependencies]
-bevy_gameplay_tag = { git = "https://github.com/SuitedRioter/bevy_gameplay_tag.git" }
+bevy_gameplay_tag = "0.1.0"
 bevy = "0.18"
 ```
 
