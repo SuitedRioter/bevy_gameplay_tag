@@ -1,4 +1,3 @@
-use bevy::prelude::Res;
 use std::fmt::Debug;
 use std::hash::{Hash, Hasher};
 
@@ -71,7 +70,7 @@ impl GameplayTag {
     pub fn matches_tag(
         &self,
         tag_to_check: &GameplayTag,
-        tags_manager: &Res<GameplayTagsManager>,
+        tags_manager: &GameplayTagsManager,
     ) -> bool {
         let complete_container = tags_manager.get_single_tag_container(self);
         if let Some(exist_container) = complete_container {
@@ -132,7 +131,7 @@ impl GameplayTag {
     pub fn matches_any(
         &self,
         container_to_check: &GameplayTagContainer,
-        tags_manager: &Res<GameplayTagsManager>,
+        tags_manager: &GameplayTagsManager,
     ) -> bool {
         let complete_container = tags_manager.get_single_tag_container(self);
         if let Some(exist_container) = complete_container {

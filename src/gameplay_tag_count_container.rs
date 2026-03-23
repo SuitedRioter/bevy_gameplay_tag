@@ -4,7 +4,7 @@ use bevy::{
         entity::Entity,
         event::EntityEvent,
         observer::{ObservedBy, Observer},
-        system::{Commands, Res},
+        system::Commands,
         world::World,
     },
     log::warn,
@@ -160,7 +160,7 @@ impl GameplayTagCountContainer {
         &mut self,
         container: &GameplayTagContainer,
         count_delta: i32,
-        tags_manager: &Res<GameplayTagsManager>,
+        tags_manager: &GameplayTagsManager,
         commands: &mut Commands,
         entity: Entity,
     ) {
@@ -205,7 +205,7 @@ impl GameplayTagCountContainer {
         &mut self,
         tag: &GameplayTag,
         count_delta: i32,
-        tags_manager: &Res<GameplayTagsManager>,
+        tags_manager: &GameplayTagsManager,
         commands: &mut Commands,
         entity: Entity,
     ) -> bool {
@@ -241,7 +241,7 @@ impl GameplayTagCountContainer {
         &mut self,
         tag: &GameplayTag,
         count_delta: i32,
-        tags_manager: &Res<GameplayTagsManager>,
+        tags_manager: &GameplayTagsManager,
         commands: &mut Commands,
         entity: Entity,
     ) -> bool {
@@ -280,7 +280,7 @@ impl GameplayTagCountContainer {
         &mut self,
         tag: &GameplayTag,
         new_count: i32,
-        tags_manager: &Res<GameplayTagsManager>,
+        tags_manager: &GameplayTagsManager,
         commands: &mut Commands,
         entity: Entity,
     ) -> bool {
@@ -421,7 +421,7 @@ impl GameplayTagCountContainer {
     /// self.fill_parent_tags(&tags_manager);
     /// ```
     ///
-    pub fn fill_parent_tags(&mut self, tags_manager: &Res<GameplayTagsManager>) {
+    pub fn fill_parent_tags(&mut self, tags_manager: &GameplayTagsManager) {
         self.explicit_tags.fill_parent_tags(tags_manager);
     }
 
@@ -429,7 +429,7 @@ impl GameplayTagCountContainer {
         &mut self,
         tag: &GameplayTag,
         count_delta: i32,
-        tags_manager: &Res<GameplayTagsManager>,
+        tags_manager: &GameplayTagsManager,
         commands: &mut Commands,
         entity: Entity,
     ) -> bool {
@@ -444,7 +444,7 @@ impl GameplayTagCountContainer {
         &mut self,
         tag: &GameplayTag,
         count_delta: i32,
-        tags_manager: &Res<GameplayTagsManager>,
+        tags_manager: &GameplayTagsManager,
         commands: &mut Commands,
         entity: Entity,
     ) -> bool {
@@ -459,7 +459,7 @@ impl GameplayTagCountContainer {
         tag: &GameplayTag,
         count_delta: i32,
         defer_parent_tags_on_remove: bool,
-        tags_manager: &Res<GameplayTagsManager>,
+        tags_manager: &GameplayTagsManager,
     ) -> bool {
         let tag_already_exists = self.explicit_tags.has_tag_exact(tag);
         if !tag_already_exists {
@@ -506,7 +506,7 @@ impl GameplayTagCountContainer {
         &mut self,
         tag: &GameplayTag,
         count_delta: i32,
-        tags_manager: &Res<GameplayTagsManager>,
+        tags_manager: &GameplayTagsManager,
         commands: &mut Commands,
         entity: Entity,
     ) -> bool {

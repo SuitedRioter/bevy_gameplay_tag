@@ -1,7 +1,6 @@
 use crate::gameplay_tag::GameplayTag;
 use crate::gameplay_tags_manager::GameplayTagsManager;
 use bevy::prelude::Component;
-use bevy::prelude::Res;
 
 #[derive(Component, Debug, Clone, PartialEq)]
 pub struct GameplayTagContainer {
@@ -204,7 +203,7 @@ impl GameplayTagContainer {
         }
     }
 
-    pub fn add_tag(&mut self, tag: GameplayTag, tags_manager: &Res<GameplayTagsManager>) {
+    pub fn add_tag(&mut self, tag: GameplayTag, tags_manager: &GameplayTagsManager) {
         if tag.is_valid() {
             match self.gameplay_tags.binary_search(&tag) {
                 Ok(_) => {}
@@ -216,7 +215,7 @@ impl GameplayTagContainer {
         }
     }
 
-    pub fn add_tag_fast(&mut self, tag: GameplayTag, tags_manager: &Res<GameplayTagsManager>) {
+    pub fn add_tag_fast(&mut self, tag: GameplayTag, tags_manager: &GameplayTagsManager) {
         match self.gameplay_tags.binary_search(&tag) {
             Ok(_) => {}
             Err(index) => {
@@ -226,7 +225,7 @@ impl GameplayTagContainer {
         }
     }
 
-    pub fn add_parent_tag(&mut self, tag: GameplayTag, tags_manager: &Res<GameplayTagsManager>) {
+    pub fn add_parent_tag(&mut self, tag: GameplayTag, tags_manager: &GameplayTagsManager) {
         let complete_container = tags_manager.get_single_tag_container(&tag);
         if let Some(exist_container) = complete_container {
             for tag in exist_container.parent_tags.iter() {
@@ -270,7 +269,7 @@ impl GameplayTagContainer {
     /// // parent tags from the `gameplay_tags` in a sorted manner.
     /// ```
     ///
-    pub fn fill_parent_tags(&mut self, tags_manager: &Res<GameplayTagsManager>) {
+    pub fn fill_parent_tags(&mut self, tags_manager: &GameplayTagsManager) {
         self.parent_tags.clear();
         for tag in self.gameplay_tags.iter() {
             let complete_container = tags_manager.get_single_tag_container(tag);
@@ -289,7 +288,7 @@ impl GameplayTagContainer {
         &mut self,
         tag: &GameplayTag,
         defer_parent_tags: bool,
-        tags_manager: &Res<GameplayTagsManager>,
+        tags_manager: &GameplayTagsManager,
     ) -> bool {
         let index = self.find_tag_index(tag);
         match index {
@@ -307,7 +306,7 @@ impl GameplayTagContainer {
     pub fn remove_tags(
         &mut self,
         tags_to_remove: GameplayTagContainer,
-        tags_manager: &Res<GameplayTagsManager>,
+        tags_manager: &GameplayTagsManager,
     ) {
         let mut num_changed = 0;
         for tag in tags_to_remove.gameplay_tags.iter() {
@@ -350,7 +349,7 @@ impl GameplayTagContainer {
         &mut self,
         other_a: &GameplayTagContainer,
         other_b: &GameplayTagContainer,
-        tags_manager: &Res<GameplayTagsManager>,
+        tags_manager: &GameplayTagsManager,
     ) {
         for other_a_tag in other_a.gameplay_tags.iter() {
             if other_a_tag.matches_any(other_b, tags_manager) {
@@ -372,7 +371,7 @@ impl GameplayTagContainer {
     pub fn append_tags(
         &mut self,
         other: &GameplayTagContainer,
-        tags_manager: &Res<GameplayTagsManager>,
+        tags_manager: &GameplayTagsManager,
     ) {
         for tag in other.gameplay_tags.iter() {
             self.add_tag(tag.clone(), tags_manager);
@@ -382,7 +381,7 @@ impl GameplayTagContainer {
     pub fn filter(
         &self,
         other: &GameplayTagContainer,
-        tags_manager: &Res<GameplayTagsManager>,
+        tags_manager: &GameplayTagsManager,
     ) -> GameplayTagContainer {
         let mut filtered_tags = GameplayTagContainer::new();
         for tag in self.gameplay_tags.iter() {
@@ -396,7 +395,7 @@ impl GameplayTagContainer {
     pub fn filter_exact(
         &self,
         other: &GameplayTagContainer,
-        tags_manager: &Res<GameplayTagsManager>,
+        tags_manager: &GameplayTagsManager,
     ) -> GameplayTagContainer {
         let mut filtered_tags = GameplayTagContainer::new();
         for tag in self.gameplay_tags.iter() {
