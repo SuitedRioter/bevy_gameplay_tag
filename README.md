@@ -24,8 +24,8 @@ Add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-bevy_gameplay_tag = "0.1.0"
-bevy = "0.18"
+bevy_gameplay_tag = "0.2.0"
+bevy = "0.18.1"
 ```
 
 ## Quick Start
