@@ -1,6 +1,6 @@
 [package]
 name = "bevy_gameplay_tag"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2024"
 authors = ["SuitedRioter"]
 description = "A flexible gameplay tag system for Bevy, inspired by Unreal Engine's Gameplay Tags"
@@ -13,7 +13,7 @@ keywords = ["bevy", "gamedev", "gameplay", "tags", "ecs"]
 categories = ["game-development", "game-engines"]
 
 [dependencies]
-bevy = "0.18.0"
+bevy = "0.18.1"
 string_cache = "0.9"
 serde_json = "1.0.149"
 serde = "1.0.228"
