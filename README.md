@@ -2,8 +2,8 @@
 
 A powerful and flexible hierarchical gameplay tag system for the Bevy game engine, inspired by Unreal Engine's Gameplay Tag system.
 
-[![License](https://img.shields.io/badge/license-MIT%2FApache-blue.svg)](LICENSE-MIT)
-[![Bevy](https://img.shields.io/badge/Bevy-0.18-blue)](https://bevyengine.org)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Bevy](https://img.shields.io/badge/Bevy-0.19-blue)](https://bevyengine.org)
 
 [English](README.md) | [简体中文](README_zh.md)
 
@@ -24,8 +24,8 @@ Add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-bevy_gameplay_tag = "0.2.0"
-bevy = "0.18.1"
+bevy_gameplay_tag = "0.3.0"
+bevy = "0.19.0"
 ```
 
 ## Quick Start
@@ -49,39 +49,39 @@ fn main() {
 Create a `tag_data.json` file:
 
 ```json
-{
-  "GameplayTagList": [
-    {
-      "Tag": "Ability",
-      "DevComment": "Root tag for all abilities"
-    },
-    {
-      "Tag": "Ability.Skill",
-      "DevComment": "Skills subcategory"
-    },
-    {
-      "Tag": "Ability.Skill.Fire",
-      "DevComment": "Fire skill"
-    },
-    {
-      "Tag": "Status.Buff",
-      "DevComment": "Positive status effects"
-    },
-    {
-      "Tag": "Status.Debuff",
-      "DevComment": "Negative status effects"
-    }
-  ]
-}
+[
+  {
+    "tag_name": "Ability",
+    "description": "Root tag for all abilities"
+  },
+  {
+    "tag_name": "Ability.Skill",
+    "description": "Skills subcategory"
+  },
+  {
+    "tag_name": "Ability.Skill.Fire",
+    "description": "Fire skill"
+  },
+  {
+    "tag_name": "Status.Buff",
+    "description": "Positive status effects"
+  },
+  {
+    "tag_name": "Status.Debuff",
+    "description": "Negative status effects"
+  }
+]
 ```
 
 Load it in your app:
 
 ```rust
-use bevy_gameplay_tag::{GameplayTagsPlugin, GameplayTagsSettings};
+use bevy_gameplay_tag::GameplayTagsPlugin;
 
 App::new()
-    .add_plugins(GameplayTagsPlugin::new("assets/tag_data.json"))
+    .add_plugins(GameplayTagsPlugin::with_data_path(
+        "assets/tag_data.json".to_string(),
+    ))
     .run();
 ```
 
@@ -193,15 +193,15 @@ fn setup(mut commands: Commands) {
     commands.entity(entity).observe(on_tag_changed);
 }
 
-fn on_tag_changed(trigger: Trigger<OnGameplayEffectTagCountChanged>) {
+fn on_tag_changed(trigger: On<OnGameplayEffectTagCountChanged>) {
     let event = trigger.event();
 
     match event.event_type {
         GameplayTagEventType::NewOrRemoved => {
-            println!("Tag {} was added or removed", event.tag);
+            println!("Tag {:?} was added or removed", event.tag);
         }
         GameplayTagEventType::AnyCountChanged => {
-            println!("Tag {} count changed to {}", event.tag, event.tag_count);
+            println!("Tag {:?} count changed to {}", event.tag, event.new_count);
         }
     }
 }
@@ -216,10 +216,19 @@ Build sophisticated tag queries with boolean logic:
 let mut expr = GameplayTagQueryExpression::new();
 expr.all_tags_match()
     .add_tag(GameplayTag::new("Ability.Skill.Fire"));
-expr.no_tags_match()
+
+let mut blocked = GameplayTagQueryExpression::new();
+blocked
+    .no_tags_match()
     .add_tag(GameplayTag::new("Status.Debuff.Silence"));
 
-let query = GameplayTagQuery::new(expr);
+let mut root = GameplayTagQueryExpression::new();
+root.all_expr_match()
+    .add_expr(expr)
+    .add_expr(blocked);
+
+let mut query = GameplayTagQuery::new();
+query.build(root);
 
 // Test against a container
 if query.matches(&container) {
@@ -232,18 +241,19 @@ if query.matches(&container) {
 Define declarative tag requirements:
 
 ```rust
-let mut requirements = GameplayTagRequirements::new();
+let mut require_tags = GameplayTagContainer::new();
+require_tags.add_tag(GameplayTag::new("Ability.Skill"), &tags_manager);
 
-// Must have these tags
-requirements.require_tags.add_tag(
-    GameplayTag::new("Ability.Skill"),
-    &tags_manager
+let mut ignore_tags = GameplayTagContainer::new();
+ignore_tags.add_tag(
+    GameplayTag::new("Status.Debuff.Silence"),
+    &tags_manager,
 );
 
-// Must NOT have these tags
-requirements.ignore_tags.add_tag(
-    GameplayTag::new("Status.Debuff.Silence"),
-    &tags_manager
+let requirements = GameplayTagRequirements::new(
+    require_tags,
+    ignore_tags,
+    GameplayTagQuery::new(),
 );
 
 // Check if requirements are met
@@ -342,16 +352,11 @@ src/
 
 | Bevy Version | Plugin Version |
 |--------------|----------------|
-| 0.18.1       | 0.2.0          |
+| 0.19.0       | 0.3.0          |
 
 ## License
 
-Licensed under either of:
-
-- Apache License, Version 2.0 ([LICENSE-APACHE](LICENSE-APACHE) or http://www.apache.org/licenses/LICENSE-2.0)
-- MIT license ([LICENSE-MIT](LICENSE-MIT) or http://opensource.org/licenses/MIT)
-
-at your option.
+Licensed under the MIT license ([LICENSE](LICENSE) or http://opensource.org/licenses/MIT).
 
 ## Acknowledgments
 

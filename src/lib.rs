@@ -42,7 +42,7 @@
 //!
 //! ## Examples
 //!
-//! See the [examples directory](https://github.com/yourusername/bevy_gameplay_tag/tree/main/examples)
+//! See the [examples directory](https://github.com/SuitedRioter/bevy_gameplay_tag/tree/main/examples)
 //! for complete working examples.
 
 pub mod gameplay_tag;

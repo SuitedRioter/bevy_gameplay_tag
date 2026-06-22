@@ -79,12 +79,9 @@ impl GameplayTagContainer {
     /// * `bool` - `true` if at least one tag from `container_to_check` is found in the current container, otherwise `false`.
     ///
     /// # Examples
-    ///
-    /// ```
-    /// # use your_crate::GameplayTagContainer; // Replace with actual path
-    /// let container = GameplayTagContainer::new(vec!["Tag1", "Tag2"]);
-    /// let other_container = GameplayTagContainer::new(vec!["Tag2", "Tag3"]);
-    /// assert_eq!(container.has_any(&other_container), true);
+    /// ```ignore
+    /// // Build both containers with GameplayTagContainer::add_tag before comparing them.
+    /// assert!(container.has_any(&other_container));
     /// ```
     ///
     pub fn has_any(&self, container_to_check: &GameplayTagContainer) -> bool {
@@ -110,13 +107,9 @@ impl GameplayTagContainer {
     /// * `bool` - `true` if at least one tag from `container_to_check` exactly matches a tag in the current container, otherwise `false`.
     ///
     /// # Examples
-    ///
-    /// ```
-    /// use your_gameplay_tag_module::GameplayTagContainer; // Replace with actual module and import
-    ///
-    /// let container1 = GameplayTagContainer::new(vec!["Tag1".into(), "Tag2".into()]);
-    /// let container2 = GameplayTagContainer::new(vec!["Tag2".into(), "Tag3".into()]);
-    /// assert_eq!(container1.has_any_exact(&container2), true);
+    /// ```ignore
+    /// // Compare two containers that were populated with explicit tags via add_tag.
+    /// assert!(container1.has_any_exact(&container2));
     /// ```
     ///
     pub fn has_any_exact(&self, container_to_check: &GameplayTagContainer) -> bool {
@@ -142,17 +135,10 @@ impl GameplayTagContainer {
     /// * `bool` - `true` if all of the tags from `container_to_check` are found in the current container, or if `container_to_check` is empty. `false` otherwise.
     ///
     /// # Examples
-    ///
+    /// ```ignore
+    /// // Empty input returns true; otherwise every explicit tag in `required` must match.
+    /// assert!(container.has_all(&required));
     /// ```
-    /// # use your_crate_name::GameplayTagContainer; // Replace with actual crate and struct names
-    /// let mut container = GameplayTagContainer::new();
-    /// container.add_tag("tag1");
-    /// container.add_tag("tag2");
-    ///
-    /// let check_container = GameplayTagContainer::from_tags(vec!["tag1", "tag2"]);
-    /// assert!(container.has_all(&check_container));
-    ///
-    /// let check_container_with_extra = GameplayTagContainer::from_tags
     pub fn has_all(&self, container_to_check: &GameplayTagContainer) -> bool {
         if container_to_check.is_empty() {
             true
@@ -176,20 +162,9 @@ impl GameplayTagContainer {
     /// * `bool` - `true` if all the tags in `container_to_check` are exactly present in the current container, or if `container_to_check` is empty. Otherwise, returns `false`.
     ///
     /// # Examples
-    ///
-    /// ```
-    /// # use your_gameplay_tag_module::GameplayTagContainer; // Replace with actual module path
-    /// let mut container1 = GameplayTagContainer::new();
-    /// container1.add_tag("Tag1");
-    /// container1.add_tag("Tag2");
-    ///
-    /// let mut container2 = GameplayTagContainer::new();
-    /// container2.add_tag("Tag1");
-    ///
-    /// assert_eq!(container1.has_all_exact(&container2), true);
-    ///
-    /// container2.add_tag("Tag3");
-    /// assert_eq!(container1.has_all_exact(&container2), false);
+    /// ```ignore
+    /// // Exact matching only checks explicit tags in the current container.
+    /// assert!(container1.has_all_exact(&container2));
     /// ```
     ///
     pub fn has_all_exact(&self, container_to_check: &GameplayTagContainer) -> bool {
@@ -261,12 +236,9 @@ impl GameplayTagContainer {
     ///   to maintain sorted order, and inserts the tag if it is not already present.
     ///
     /// # Examples
-    ///
-    /// ```
-    /// // Assuming `self` has some gameplay tags and `tags_manager` is properly set up.
-    /// self.fill_parent_tags(&tags_manager);
-    /// // After calling this method, `self.parent_tags` will contain all unique
-    /// // parent tags from the `gameplay_tags` in a sorted manner.
+    /// ```ignore
+    /// // Rebuild parent tags after mutating the explicit tag list directly.
+    /// container.fill_parent_tags(&tags_manager);
     /// ```
     ///
     pub fn fill_parent_tags(&mut self, tags_manager: &GameplayTagsManager) {
@@ -340,9 +312,9 @@ impl GameplayTagContainer {
     /// adding or checking matches.
     ///
     /// # Examples
-    /// ```
-    /// // Assuming `self`, `other_a`, `other_b`, and `tags_manager` are properly initialized
-    /// self.append_matches_tags(&other_a, &other_b, &tags_manager);
+    /// ```ignore
+    /// // Append tags from `other_a` that match tags present in `other_b`.
+    /// result.append_matches_tags(&other_a, &other_b, &tags_manager);
     /// ```
     ///
     pub fn append_matches_tags(
@@ -658,5 +630,45 @@ impl GameplayTagQuery {
         } else {
             true
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::{GameplayTag, GameplayTagsManager, GameplayTagsSettings};
+    use bevy::prelude::World;
+
+    fn test_tags_manager() -> GameplayTagsManager {
+        let mut world = World::new();
+        world.insert_resource(GameplayTagsSettings {
+            json_data: r#"
+            [
+                { "tag_name": "Ability.Skill.Fire", "description": "Fire skill" },
+                { "tag_name": "Ability.Skill.Ice", "description": "Ice skill" }
+            ]
+            "#
+            .to_string(),
+            data_path: None,
+        });
+        world.init_resource::<GameplayTagsManager>();
+        world.remove_resource::<GameplayTagsManager>().unwrap()
+    }
+
+    #[test]
+    fn add_tag_includes_parent_tags_for_hierarchical_matching() {
+        let tags_manager = test_tags_manager();
+        let fire = GameplayTag::new("Ability.Skill.Fire");
+        let ability = GameplayTag::new("Ability");
+        let skill = GameplayTag::new("Ability.Skill");
+
+        let mut container = GameplayTagContainer::new();
+        container.add_tag(fire.clone(), &tags_manager);
+
+        assert!(container.has_tag(&fire));
+        assert!(container.has_tag(&ability));
+        assert!(container.has_tag(&skill));
+        assert!(!container.has_tag_exact(&ability));
+        assert_eq!(container.parent_tags, vec![ability, skill]);
     }
 }

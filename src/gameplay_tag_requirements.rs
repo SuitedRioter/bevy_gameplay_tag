@@ -23,11 +23,7 @@ impl GameplayTagRequirements {
     }
 
     pub fn is_empty(&self) -> bool {
-        let has_require = !self.require_tags.is_empty();
-        let has_ignore = !self.ignore_tags.is_empty();
-        let has_query = !self.tag_query.is_empty();
-
-        has_require && has_ignore && has_query
+        self.require_tags.is_empty() && self.ignore_tags.is_empty() && self.tag_query.is_empty()
     }
 
     pub fn requirements_met(&self, container_to_check: &GameplayTagContainer) -> bool {
@@ -61,7 +57,7 @@ impl GameplayTagRequirements {
             requirements_expression
                 .all_tags_match()
                 .add_tags(&self.require_tags);
-            ignore_expression
+            root_expression
                 .all_expr_match()
                 .add_expr(requirements_expression);
         } else {
@@ -73,5 +69,108 @@ impl GameplayTagRequirements {
         let mut query = GameplayTagQuery::new();
         query.build(root_expression);
         query
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::{GameplayTag, GameplayTagsManager, GameplayTagsSettings};
+    use bevy::prelude::World;
+
+    fn test_tags_manager() -> GameplayTagsManager {
+        let mut world = World::new();
+        world.insert_resource(GameplayTagsSettings {
+            json_data: r#"
+            [
+                { "tag_name": "Ability.Skill.Fire", "description": "Fire skill" },
+                { "tag_name": "Status.Buff.Haste", "description": "Haste buff" },
+                { "tag_name": "Status.Debuff.Silence", "description": "Silence debuff" }
+            ]
+            "#
+            .to_string(),
+            data_path: None,
+        });
+        world.init_resource::<GameplayTagsManager>();
+        world.remove_resource::<GameplayTagsManager>().unwrap()
+    }
+
+    fn container_with_tags(tags_manager: &GameplayTagsManager, tags: &[&str]) -> GameplayTagContainer {
+        let mut container = GameplayTagContainer::new();
+        for tag in tags {
+            container.add_tag(GameplayTag::new(tag), tags_manager);
+        }
+        container
+    }
+
+    #[test]
+    fn is_empty_only_when_all_sources_are_empty() {
+        let tags_manager = test_tags_manager();
+        let empty = GameplayTagRequirements::new(
+            GameplayTagContainer::new(),
+            GameplayTagContainer::new(),
+            GameplayTagQuery::new(),
+        );
+        assert!(empty.is_empty());
+
+        let require_only = GameplayTagRequirements::new(
+            container_with_tags(&tags_manager, &["Ability.Skill.Fire"]),
+            GameplayTagContainer::new(),
+            GameplayTagQuery::new(),
+        );
+        assert!(!require_only.is_empty());
+
+        let ignore_only = GameplayTagRequirements::new(
+            GameplayTagContainer::new(),
+            container_with_tags(&tags_manager, &["Status.Debuff.Silence"]),
+            GameplayTagQuery::new(),
+        );
+        assert!(!ignore_only.is_empty());
+    }
+
+    #[test]
+    fn requirements_met_handles_require_and_ignore_tags() {
+        let tags_manager = test_tags_manager();
+        let requirements = GameplayTagRequirements::new(
+            container_with_tags(&tags_manager, &["Ability.Skill.Fire"]),
+            container_with_tags(&tags_manager, &["Status.Debuff.Silence"]),
+            GameplayTagQuery::new(),
+        );
+
+        let allowed = container_with_tags(&tags_manager, &["Ability.Skill.Fire", "Status.Buff.Haste"]);
+        let missing_required = container_with_tags(&tags_manager, &["Status.Buff.Haste"]);
+        let blocked = container_with_tags(
+            &tags_manager,
+            &["Ability.Skill.Fire", "Status.Debuff.Silence"],
+        );
+
+        assert!(requirements.requirements_met(&allowed));
+        assert!(!requirements.requirements_met(&missing_required));
+        assert!(!requirements.requirements_met(&blocked));
+    }
+
+    #[test]
+    fn convert_tag_fields_to_tag_query_matches_requirements_semantics() {
+        let tags_manager = test_tags_manager();
+        let require_only = GameplayTagRequirements::new(
+            container_with_tags(&tags_manager, &["Ability.Skill.Fire"]),
+            GameplayTagContainer::new(),
+            GameplayTagQuery::new(),
+        );
+        let require_query = require_only.convert_tag_fields_to_tag_query();
+        let matching = container_with_tags(&tags_manager, &["Ability.Skill.Fire"]);
+        let missing = container_with_tags(&tags_manager, &["Status.Buff.Haste"]);
+        assert!(require_query.matches(&matching));
+        assert!(!require_query.matches(&missing));
+
+        let ignore_only = GameplayTagRequirements::new(
+            GameplayTagContainer::new(),
+            container_with_tags(&tags_manager, &["Status.Debuff.Silence"]),
+            GameplayTagQuery::new(),
+        );
+        let ignore_query = ignore_only.convert_tag_fields_to_tag_query();
+        assert!(ignore_query.matches(&matching));
+        let silenced = container_with_tags(&tags_manager, &["Status.Debuff.Silence"]);
+        assert!(!ignore_query.matches(&silenced));
     }
 }

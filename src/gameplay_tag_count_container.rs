@@ -52,13 +52,9 @@ impl GameplayTagCountContainer {
     /// * `bool` - `true` if the tag is present and its count is greater than 0, otherwise `false`.
     ///
     /// # Examples
-    ///
-    /// ```
-    /// # use your_crate::GameplayTag;
-    /// # use your_crate::YourStruct; // Replace YourStruct with the actual struct name that implements this method
-    /// let obj = YourStruct::new();
-    /// let tag = GameplayTag::from("example_tag");
-    /// assert_eq!(obj.has_matching_gameplay_tag(&tag), true);
+    /// ```ignore
+    /// // Returns true when the count for `tag_to_check` is greater than zero.
+    /// assert!(tag_count_container.has_matching_gameplay_tag(&tag_to_check));
     /// ```
     ///
     /// This function looks up the given `tag_to_check` in the internal `gameplay_tag_count_map` of the object. It returns `true`
@@ -309,11 +305,10 @@ impl GameplayTagCountContainer {
     /// * The count of the provided `GameplayTag` if it exists in the map, otherwise 0.
     ///
     /// # Examples
-    ///
-    /// ```
-    /// let tag = GameplayTag::new("example_tag");
-    /// let count = some_instance.get_tag_count(&tag);
-    /// assert_eq!(count, 5); // Assuming "example_tag" has a count of 5 in the map.
+    /// ```ignore
+    /// // Query the current aggregate count for a tag.
+    /// let count = tag_count_container.get_tag_count(&tag);
+    /// assert_eq!(count, 1);
     /// ```
     ///
     #[inline]
@@ -335,10 +330,10 @@ impl GameplayTagCountContainer {
     /// * The count of the specified tag as `i32`. If the tag is not found, returns 0.
     ///
     /// # Examples
-    /// ```
-    /// let my_tag = GameplayTag::new("My.Tag");
-    /// let count = some_object.get_explicit_tag_count(&my_tag);
-    /// assert_eq!(count, 5); // Assuming "My.Tag" has been added 5 times
+    /// ```ignore
+    /// // Query the count for an explicitly added tag.
+    /// let count = tag_count_container.get_explicit_tag_count(&my_tag);
+    /// assert_eq!(count, 1);
     /// ```
     ///
     #[inline]
@@ -371,11 +366,9 @@ impl GameplayTagCountContainer {
     ///   for removal.
     ///
     /// # Examples
-    ///
-    /// ```rust
-    /// // Assuming `world` is a mutable reference to a World instance and `entity` is the target Entity.
-    /// let mut some_object = SomeObject::new();
-    /// some_object.reset(&mut world, entity);
+    /// ```ignore
+    /// // Clear tag state and remove Observer components watching `entity`.
+    /// tag_count_container.reset(&mut world, entity);
     /// ```
     ///
     /// # Notes
@@ -414,11 +407,9 @@ impl GameplayTagCountContainer {
     ///
     /// # Example
     ///
-    /// ```
-    /// // Assuming `self.explicit_tags` initially contains some specific tags.
-    /// // After calling `fill_parent_tags`, `self.explicit_tags` will also include
-    /// // all the parent tags of the initial set.
-    /// self.fill_parent_tags(&tags_manager);
+    /// ```ignore
+    /// // Rebuild parent tags after directly mutating explicit_tags.
+    /// tag_count_container.fill_parent_tags(&tags_manager);
     /// ```
     ///
     pub fn fill_parent_tags(&mut self, tags_manager: &GameplayTagsManager) {
@@ -567,4 +558,75 @@ pub struct OnGameplayEffectTagCountChanged {
     pub tag: GameplayTag,
     pub new_count: i32,
     pub event_type: GameplayTagEventType,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::{GameplayTag, GameplayTagsManager, GameplayTagsSettings};
+    use bevy::{ecs::world::CommandQueue, prelude::World};
+
+    fn test_tags_manager() -> GameplayTagsManager {
+        let mut world = World::new();
+        world.insert_resource(GameplayTagsSettings {
+            json_data: r#"
+            [
+                { "tag_name": "Ability.Skill.Fire", "description": "Fire skill" },
+                { "tag_name": "Status.Buff.Haste", "description": "Haste buff" }
+            ]
+            "#
+            .to_string(),
+            data_path: None,
+        });
+        world.init_resource::<GameplayTagsManager>();
+        world.remove_resource::<GameplayTagsManager>().unwrap()
+    }
+
+    #[test]
+    fn update_tag_count_tracks_explicit_and_parent_counts() {
+        let tags_manager = test_tags_manager();
+        let fire = GameplayTag::new("Ability.Skill.Fire");
+        let skill = GameplayTag::new("Ability.Skill");
+        let ability = GameplayTag::new("Ability");
+
+        let mut world = World::new();
+        let entity = world.spawn_empty().id();
+        let mut queue = CommandQueue::default();
+        let mut commands = Commands::new(&mut queue, &world);
+        let mut container = GameplayTagCountContainer::new();
+
+        assert!(container.update_tag_count(&fire, 2, &tags_manager, &mut commands, entity));
+        assert_eq!(container.get_explicit_tag_count(&fire), 2);
+        assert_eq!(container.get_tag_count(&fire), 2);
+        assert_eq!(container.get_tag_count(&skill), 2);
+        assert_eq!(container.get_tag_count(&ability), 2);
+        assert!(container.explicit_tags.has_tag_exact(&fire));
+        assert!(container.explicit_tags.has_tag(&skill));
+        assert!(container.has_matching_gameplay_tag(&ability));
+    }
+
+    #[test]
+    fn removing_last_stack_clears_explicit_and_parent_matches() {
+        let tags_manager = test_tags_manager();
+        let fire = GameplayTag::new("Ability.Skill.Fire");
+        let skill = GameplayTag::new("Ability.Skill");
+        let ability = GameplayTag::new("Ability");
+
+        let mut world = World::new();
+        let entity = world.spawn_empty().id();
+        let mut queue = CommandQueue::default();
+        let mut commands = Commands::new(&mut queue, &world);
+        let mut container = GameplayTagCountContainer::new();
+
+        assert!(container.update_tag_count(&fire, 1, &tags_manager, &mut commands, entity));
+        assert!(container.update_tag_count(&fire, -1, &tags_manager, &mut commands, entity));
+
+        assert_eq!(container.get_explicit_tag_count(&fire), 0);
+        assert_eq!(container.get_tag_count(&fire), 0);
+        assert_eq!(container.get_tag_count(&skill), 0);
+        assert_eq!(container.get_tag_count(&ability), 0);
+        assert!(!container.explicit_tags.has_tag_exact(&fire));
+        assert!(!container.explicit_tags.has_tag(&skill));
+        assert!(!container.has_matching_gameplay_tag(&ability));
+    }
 }

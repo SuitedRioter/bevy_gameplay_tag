@@ -2,8 +2,8 @@
 
 一个为 Bevy 游戏引擎设计的强大而灵活的层级游戏标签系统，灵感来源于虚幻引擎的 Gameplay Tag 系统。
 
-[![License](https://img.shields.io/badge/license-MIT%2FApache-blue.svg)](LICENSE-MIT)
-[![Bevy](https://img.shields.io/badge/Bevy-0.18-blue)](https://bevyengine.org)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Bevy](https://img.shields.io/badge/Bevy-0.19-blue)](https://bevyengine.org)
 
 [English](README.md) | [简体中文](README_zh.md)
 
@@ -24,8 +24,8 @@
 
 ```toml
 [dependencies]
-bevy_gameplay_tag = "0.2.0"
-bevy = "0.18.1"
+bevy_gameplay_tag = "0.3.0"
+bevy = "0.19.0"
 ```
 
 ## 快速开始
@@ -49,39 +49,39 @@ fn main() {
 创建一个 `tag_data.json` 文件：
 
 ```json
-{
-    "GameplayTagList": [
-        {
-            "Tag": "Ability",
-            "DevComment": "所有技能的根标签"
-        },
-        {
-            "Tag": "Ability.Skill",
-            "DevComment": "技能子类别"
-        },
-        {
-            "Tag": "Ability.Skill.Fire",
-            "DevComment": "火焰技能"
-        },
-        {
-            "Tag": "Status.Buff",
-            "DevComment": "正面状态效果"
-        },
-        {
-            "Tag": "Status.Debuff",
-            "DevComment": "负面状态效果"
-        }
-    ]
-}
+[
+    {
+        "tag_name": "Ability",
+        "description": "所有技能的根标签"
+    },
+    {
+        "tag_name": "Ability.Skill",
+        "description": "技能子类别"
+    },
+    {
+        "tag_name": "Ability.Skill.Fire",
+        "description": "火焰技能"
+    },
+    {
+        "tag_name": "Status.Buff",
+        "description": "正面状态效果"
+    },
+    {
+        "tag_name": "Status.Debuff",
+        "description": "负面状态效果"
+    }
+]
 ```
 
 在应用中加载：
 
 ```rust
-use bevy_gameplay_tag::{GameplayTagsPlugin, GameplayTagsSettings};
+use bevy_gameplay_tag::GameplayTagsPlugin;
 
 App::new()
-    .add_plugins(GameplayTagsPlugin::new("assets/tag_data.json"))
+    .add_plugins(GameplayTagsPlugin::with_data_path(
+        "assets/tag_data.json".to_string(),
+    ))
     .run();
 ```
 
@@ -193,15 +193,15 @@ fn setup(mut commands: Commands) {
     commands.entity(entity).observe(on_tag_changed);
 }
 
-fn on_tag_changed(trigger: Trigger<OnGameplayEffectTagCountChanged>) {
+fn on_tag_changed(trigger: On<OnGameplayEffectTagCountChanged>) {
     let event = trigger.event();
 
     match event.event_type {
         GameplayTagEventType::NewOrRemoved => {
-            println!("标签 {} 被添加或移除", event.tag);
+            println!("标签 {:?} 被添加或移除", event.tag);
         }
         GameplayTagEventType::AnyCountChanged => {
-            println!("标签 {} 的计数变更为 {}", event.tag, event.tag_count);
+            println!("标签 {:?} 的计数变更为 {}", event.tag, event.new_count);
         }
     }
 }
@@ -216,10 +216,19 @@ fn on_tag_changed(trigger: Trigger<OnGameplayEffectTagCountChanged>) {
 let mut expr = GameplayTagQueryExpression::new();
 expr.all_tags_match()
     .add_tag(GameplayTag::new("Ability.Skill.Fire"));
-expr.no_tags_match()
+
+let mut blocked = GameplayTagQueryExpression::new();
+blocked
+    .no_tags_match()
     .add_tag(GameplayTag::new("Status.Debuff.Silence"));
 
-let query = GameplayTagQuery::new(expr);
+let mut root = GameplayTagQueryExpression::new();
+root.all_expr_match()
+    .add_expr(expr)
+    .add_expr(blocked);
+
+let mut query = GameplayTagQuery::new();
+query.build(root);
 
 // 对容器进行测试
 if query.matches(&container) {
@@ -232,18 +241,19 @@ if query.matches(&container) {
 定义声明式的标签需求：
 
 ```rust
-let mut requirements = GameplayTagRequirements::new();
+let mut require_tags = GameplayTagContainer::new();
+require_tags.add_tag(GameplayTag::new("Ability.Skill"), &tags_manager);
 
-// 必须拥有这些标签
-requirements.require_tags.add_tag(
-    GameplayTag::new("Ability.Skill"),
-    &tags_manager
+let mut ignore_tags = GameplayTagContainer::new();
+ignore_tags.add_tag(
+    GameplayTag::new("Status.Debuff.Silence"),
+    &tags_manager,
 );
 
-// 不能拥有这些标签
-requirements.ignore_tags.add_tag(
-    GameplayTag::new("Status.Debuff.Silence"),
-    &tags_manager
+let requirements = GameplayTagRequirements::new(
+    require_tags,
+    ignore_tags,
+    GameplayTagQuery::new(),
 );
 
 // 检查是否满足需求
@@ -359,11 +369,16 @@ if ai_tags.has_matching_gameplay_tag(&can_see_player)
 // 定义角色职业标签
 let warrior = GameplayTag::new("Class.Warrior");
 let mage = GameplayTag::new("Class.Mage");
-let rogue = GameplayTag::new("Class.Rogue");
+let _rogue = GameplayTag::new("Class.Rogue");
 
 // 定义装备需求
-let mut sword_requirements = GameplayTagRequirements::new();
-sword_requirements.require_tags.add_tag(warrior, &tags_manager);
+let mut sword_require_tags = GameplayTagContainer::new();
+sword_require_tags.add_tag(warrior, &tags_manager);
+let sword_requirements = GameplayTagRequirements::new(
+    sword_require_tags,
+    GameplayTagContainer::new(),
+    GameplayTagQuery::new(),
+);
 
 // 检查角色是否可以装备
 if sword_requirements.requirements_met(&character_tags) {
@@ -371,11 +386,13 @@ if sword_requirements.requirements_met(&character_tags) {
 }
 
 // 定义技能学习需求
-let mut fireball_requirements = GameplayTagRequirements::new();
-fireball_requirements.require_tags.add_tag(mage, &tags_manager);
-fireball_requirements.require_tags.add_tag(
-    GameplayTag::new("Level.10"),
-    &tags_manager
+let mut fireball_require_tags = GameplayTagContainer::new();
+fireball_require_tags.add_tag(mage, &tags_manager);
+fireball_require_tags.add_tag(GameplayTag::new("Level.10"), &tags_manager);
+let fireball_requirements = GameplayTagRequirements::new(
+    fireball_require_tags,
+    GameplayTagContainer::new(),
+    GameplayTagQuery::new(),
 );
 
 if fireball_requirements.requirements_met(&character_tags) {
@@ -402,97 +419,11 @@ cargo run --example example
 
 | Bevy 版本 | 插件版本 |
 | --------- | -------- |
-| 0.18      | 0.1.0    |
-
-## 架构设计
-
-### 模块结构
-
-```
-src/
-├── lib.rs                          # 模块导出
-├── gameplay_tag.rs                 # 核心标签定义
-├── gameplay_tags_manager.rs        # 标签管理器
-├── gameplay_tag_container.rs       # 标签容器和查询系统
-├── gameplay_tag_count_container.rs # 引用计数标签容器
-├── gameplay_tag_requirements.rs    # 标签需求系统
-└── gameplay_tags_plugin.rs         # Bevy 插件集成
-```
-
-### 设计理念
-
-1. **层级结构**：标签使用点号分隔的层级命名（如 `A.B.C`），自动建立父子关系
-2. **引用计数**：支持标签的叠加效果，适用于 Buff/Debuff 等需要计数的场景
-3. **事件驱动**：标签变化时自动触发事件，便于其他系统响应
-4. **查询灵活**：支持精确匹配、层级匹配、布尔逻辑组合等多种查询方式
-5. **ECS 集成**：完全基于 Bevy 的 ECS 架构，充分利用组件系统的优势
-
-## 最佳实践
-
-### 标签命名规范
-
-建议使用清晰的层级命名结构：
-
-```
-根类别.子类别.具体项
-例如：
-- Ability.Skill.Fire
-- Status.Buff.Strength
-- Item.Type.Equipment.Weapon
-- AI.State.Patrolling
-```
-
-### 标签组织建议
-
-1. **按功能分类**：将相关标签组织在同一层级下
-2. **避免过深层级**：建议不超过 4-5 层
-3. **使用有意义的名称**：标签名应该自解释
-4. **保持一致性**：在整个项目中使用统一的命名风格
-
-### 性能建议
-
-1. **预加载标签**：在游戏启动时通过 JSON 加载所有标签定义
-2. **复用容器**：避免频繁创建和销毁标签容器
-3. **批量操作**：尽可能批量添加或移除标签
-4. **合理使用事件**：只在必要时监听标签变化事件
-
-## 架构设计
-
-### 模块结构
-
-```
-src/
-├── lib.rs                          # 模块导出
-├── gameplay_tag.rs                 # 核心标签定义
-├── gameplay_tags_manager.rs        # 标签管理器
-├── gameplay_tag_container.rs       # 标签容器和查询系统
-├── gameplay_tag_count_container.rs # 引用计数标签容器
-├── gameplay_tag_requirements.rs    # 标签需求系统
-└── gameplay_tags_plugin.rs         # Bevy 插件集成
-```
-
-### 设计理念
-
-1. **层级结构**：标签使用点号分隔的层级命名（如 `A.B.C`），自动建立父子关系
-2. **引用计数**：支持标签的叠加效果，适用于 Buff/Debuff 等需要计数的场景
-3. **事件驱动**：标签变化时自动触发事件，便于其他系统响应
-4. **查询灵活**：支持精确匹配、层级匹配、布尔逻辑组合等多种查询方式
-5. **ECS 集成**：完全基于 Bevy 的 ECS 架构，充分利用组件系统的优势
-
-## 兼容性
-
-| Bevy 版本 | 插件版本 |
-| --------- | -------- |
-| 0.18.1    | 0.2.0    |
+| 0.19.0    | 0.3.0    |
 
 ## 许可证
 
-本项目采用以下任一许可证：
-
-- Apache License, Version 2.0 ([LICENSE-APACHE](LICENSE-APACHE) 或 http://www.apache.org/licenses/LICENSE-2.0)
-- MIT license ([LICENSE-MIT](LICENSE-MIT) 或 http://opensource.org/licenses/MIT)
-
-由你选择。
+本项目采用 MIT 许可证（[LICENSE](LICENSE) 或 http://opensource.org/licenses/MIT）。
 
 ## 致谢
 

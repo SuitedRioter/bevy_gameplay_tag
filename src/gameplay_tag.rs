@@ -59,12 +59,11 @@ impl GameplayTag {
     /// This function does not return any errors directly. However, it assumes that the `tags_manager` is correctly initialized and can provide a valid `GameplayTagContainer` for the current object. If the `tags_manager` cannot provide a container (returns `None`), the function will return `false`.
     ///
     /// # Examples
-    /// ```rust
-    /// // Assuming `self` is an instance of a struct that uses this method,
-    /// // `tag_to_check` is a `GameplayTag` you want to check,
-    /// // and `tags_manager` is a properly initialized `Res<GameplayTagsManager>`.
-    /// let result = self.matches_tag(&tag_to_check, &tags_manager);
-    /// assert_eq!(result, true);  // Or false, depending on whether the tag is present.
+    /// ```ignore
+    /// // Requires a populated GameplayTagsManager.
+    /// let fire = GameplayTag::new("Ability.Skill.Fire");
+    /// let parent = GameplayTag::new("Ability.Skill");
+    /// assert!(fire.matches_tag(&parent, &tags_manager));
     /// ```
     ///
     pub fn matches_tag(
@@ -91,13 +90,12 @@ impl GameplayTag {
     /// * `bool` - `true` if both tags are valid and their names match exactly, `false` otherwise.
     ///
     /// # Examples
+    /// ```rust
+    /// use bevy_gameplay_tag::GameplayTag;
     ///
-    /// ```
-    /// # use your_gameplay_tag_module::GameplayTag; // Replace with actual module path
     /// let tag1 = GameplayTag::new("Some.Tag");
     /// let tag2 = GameplayTag::new("Some.Tag");
     /// assert!(tag1.matches_tag_exact(&tag2));
-    /// ```
     /// ```
     pub fn matches_tag_exact(&self, tag_to_check: &GameplayTag) -> bool {
         if !tag_to_check.is_valid() {
@@ -121,11 +119,11 @@ impl GameplayTag {
     /// * `false` otherwise, or if the current object does not have an associated tag container.
     ///
     /// # Examples
-    ///
-    /// ```
-    /// // Assuming `self` has a tag "Ability.Fire", and `container_to_check` contains "Ability.Fire" and "Ability.Ice"
-    /// let result = self.matches_any(&container_to_check, &tags_manager);
-    /// assert_eq!(result, true);
+    /// ```ignore
+    /// // Requires a populated GameplayTagsManager and a container built with the same tags.
+    /// let fire = GameplayTag::new("Ability.Skill.Fire");
+    /// let result = fire.matches_any(&container_to_check, &tags_manager);
+    /// assert!(result);
     /// ```
     ///
     pub fn matches_any(
@@ -153,14 +151,10 @@ impl GameplayTag {
     /// * `bool` - `true` if the current tag is found exactly in the container, otherwise `false`.
     ///
     /// # Examples
-    ///
-    /// ```
-    /// # use your_crate::GameplayTag;
-    /// # use your_crate::GameplayTagContainer;
+    /// ```ignore
+    /// // Build the container with GameplayTagContainer::add_tag before checking.
     /// let tag = GameplayTag::new("Some.Tag");
-    /// let mut container = GameplayTagContainer::new();
-    /// container.add_tag(GameplayTag::new("Some.Tag"));
-    /// assert!(tag.matches_any_exact(&container));
+    /// assert!(tag.matches_any_exact(&container_to_check));
     /// ```
     ///
     /// This method uses binary search for efficient lookup, which requires the `GameplayTagContainer`'s
