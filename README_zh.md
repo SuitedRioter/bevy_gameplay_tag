@@ -89,16 +89,25 @@ println!("加载了 {} 条标签定义", rows.len());
 最简单的避免散落字符串字面量的方式，是把所有标签名集中到一个常量模块：
 
 ```rust
+use bevy_gameplay_tag::{gameplay_tag, gameplay_tag_names};
+
 mod tags {
-    pub const DAMAGED: &str = "Status.Damaged";
-    pub const BUFF_STRENGTH: &str = "Buff.Strength";
-    pub const SILENCE: &str = "Status.Debuff.Silence";
+    use super::gameplay_tag_names;
+
+    gameplay_tag_names! {
+        pub DAMAGED = "Status.Damaged";
+        pub BUFF_STRENGTH = "Buff.Strength";
+        pub SILENCE = "Status.Debuff.Silence";
+    }
 }
 ```
 
 然后通过 manager 访问，同时确认标签已注册：
 
 ```rust
+use bevy::prelude::*;
+use bevy_gameplay_tag::{gameplay_tag, GameplayTagsManager};
+
 // 方式 A — 可选型：不存在时返回 None
 if let Some(damage) = tags_manager.get_tag(tags::DAMAGED) {
     tag_container.update_tag_count(&damage, 1, &tags_manager, &mut commands, entity);
@@ -107,11 +116,14 @@ if let Some(damage) = tags_manager.get_tag(tags::DAMAGED) {
 // 方式 B — 断言型：标签未注册时在启动阶段 panic
 fn setup(tags_manager: Res<GameplayTagsManager>) {
     let damage = tags_manager.expect_tag(tags::DAMAGED);
-    // 后续使用 `damage`
+    let buff = gameplay_tag!(tags::BUFF_STRENGTH);
+    // 后续使用 `damage` 或 `buff`
 }
 ```
 
 把所有标签字符串集中在 `mod tags` 里，重命名只需改一处，拼写错误在编译时就能发现。
+
+如果你不想反复写 `GameplayTag::new(...)`，可以使用轻量的 `gameplay_tag!(...)` 辅助宏，让调用点更简洁。
 
 ## API 地图
 
@@ -291,10 +303,35 @@ if query.matches(&entity_tags) {
 
 - `GameplayTag::try_new(...)` 会先校验标签名，并拒绝空名称、前后带点、重复分隔符以及不符合 `[A-Za-z0-9_]` 规则的层级片段。
 - `GameplayTagsSettings::parse_tag_table(...)` 和 `GameplayTagsSettings::load_tag_table_from_path(...)` 会校验全部行，并对非法 JSON、非法标签名、重复标签定义返回显式错误。
+- `GameplayTagsManager::require_tag(...)` 会在必须存在的标签未注册时返回结构化错误；`expect_tag(...)` 复用同一条错误路径，只是在边界上改为 panic。
 - `GameplayTagsPlugin` 目前仍然采用“日志式初始化”。如果插件阶段读取文件或解析 JSON 失败，会记录日志并回退到空标签表。
 - 如果你需要显式处理失败，请在启动 App 之前调用 `GameplayTagsSettings::parse_tag_table(...)` 或 `GameplayTagsSettings::load_tag_table_from_path(...)`。
 - 当前 crate 仍然使用运行时字符串标签，而不是代码生成常量或编译期校验体系。
 - 一部分 rustdoc 示例被标记为 `ignore`，因为它们依赖一个已初始化的 `GameplayTagsManager` 运行上下文。
+
+### 常见配置错误
+
+```rust
+use bevy_gameplay_tag::{GameplayTagsLoadError, GameplayTagsManager, GameplayTagsSettings};
+
+let duplicate = GameplayTagsSettings::parse_tag_table(
+    r#"[
+        {"tag_name":"Ability.Skill.Fire","description":"first"},
+        {"tag_name":"Ability.Skill.Fire","description":"second"}
+    ]"#,
+);
+assert!(matches!(duplicate, Err(GameplayTagsLoadError::DuplicateTagName(_))));
+
+let invalid = GameplayTagsSettings::parse_tag_table(
+    r#"[{"tag_name":"Ability..Skill","description":"invalid"}]"#,
+);
+assert!(matches!(invalid, Err(GameplayTagsLoadError::InvalidTagName(_))));
+
+# let app = bevy::prelude::App::new();
+# let manager: &GameplayTagsManager = unimplemented!();
+let missing = manager.require_tag("Ability.Skill.Ice");
+assert!(matches!(missing, Err(GameplayTagsLoadError::UnknownTagName(_))));
+```
 
 ## 示例程序
 

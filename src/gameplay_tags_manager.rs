@@ -20,7 +20,15 @@ pub enum GameplayTagsLoadError {
         source: serde_json::Error,
     },
     InvalidTagName(InvalidTagName),
+    InvalidTagNameAtPath {
+        path: PathBuf,
+        source: InvalidTagName,
+    },
     DuplicateTagName(String),
+    DuplicateTagNameAtPath {
+        path: PathBuf,
+        tag_name: String,
+    },
     UnknownTagName(String),
 }
 
@@ -44,13 +52,27 @@ impl std::fmt::Display for GameplayTagsLoadError {
                 )
             }
             GameplayTagsLoadError::InvalidTagName(error) => write!(f, "{error}"),
+            GameplayTagsLoadError::InvalidTagNameAtPath { path, source } => {
+                write!(
+                    f,
+                    "invalid gameplay tag name in '{}': {source}",
+                    path.display()
+                )
+            }
             GameplayTagsLoadError::DuplicateTagName(tag_name) => {
                 write!(f, "duplicate gameplay tag name '{tag_name}' in tag data")
+            }
+            GameplayTagsLoadError::DuplicateTagNameAtPath { path, tag_name } => {
+                write!(
+                    f,
+                    "duplicate gameplay tag name '{tag_name}' in tag data file '{}'",
+                    path.display()
+                )
             }
             GameplayTagsLoadError::UnknownTagName(tag_name) => {
                 write!(
                     f,
-                    "gameplay tag '{tag_name}' is not registered in the tag data"
+                    "gameplay tag '{tag_name}' is not registered in the tag data; check your JSON tag table or use get_tag() for optional lookups"
                 )
             }
         }
@@ -65,7 +87,9 @@ impl std::error::Error for GameplayTagsLoadError {
             GameplayTagsLoadError::Parse(error) => Some(error),
             GameplayTagsLoadError::ParseAtPath { source, .. } => Some(source),
             GameplayTagsLoadError::InvalidTagName(error) => Some(error),
+            GameplayTagsLoadError::InvalidTagNameAtPath { source, .. } => Some(source),
             GameplayTagsLoadError::DuplicateTagName(_) => None,
+            GameplayTagsLoadError::DuplicateTagNameAtPath { .. } => None,
             GameplayTagsLoadError::UnknownTagName(_) => None,
         }
     }
@@ -360,6 +384,32 @@ impl GameplayTagsSettings {
         Ok(rows)
     }
 
+    fn validate_tag_rows_at_path(
+        rows: Vec<GameplayTagTableRow>,
+        path: &std::path::Path,
+    ) -> Result<Vec<GameplayTagTableRow>, GameplayTagsLoadError> {
+        let mut seen = std::collections::HashSet::new();
+        let path_buf = PathBuf::from(path);
+
+        for row in &rows {
+            if let Err(source) = GameplayTag::try_new(row.tag_name.as_str()) {
+                return Err(GameplayTagsLoadError::InvalidTagNameAtPath {
+                    path: path_buf.clone(),
+                    source,
+                });
+            }
+
+            if !seen.insert(row.tag_name.clone()) {
+                return Err(GameplayTagsLoadError::DuplicateTagNameAtPath {
+                    path: path_buf.clone(),
+                    tag_name: row.tag_name.clone(),
+                });
+            }
+        }
+
+        Ok(rows)
+    }
+
     pub fn parse_tag_table(
         json_data: &str,
     ) -> Result<Vec<GameplayTagTableRow>, GameplayTagsLoadError> {
@@ -378,13 +428,14 @@ impl GameplayTagsSettings {
                 source,
             })?;
 
-        Self::parse_tag_table(&json_content).map_err(|source| match source {
-            GameplayTagsLoadError::Parse(parse_source) => GameplayTagsLoadError::ParseAtPath {
-                path: path_buf,
-                source: parse_source,
-            },
-            other => other,
-        })
+        let rows = serde_json::from_str(&json_content).map_err(|source| {
+            GameplayTagsLoadError::ParseAtPath {
+                path: path_buf.clone(),
+                source,
+            }
+        })?;
+
+        Self::validate_tag_rows_at_path(rows, path)
     }
 
     pub fn with_data_path(data_path: impl Into<String>) -> Self {
@@ -430,17 +481,44 @@ mod tests {
     }
 
     #[test]
-    fn parse_tag_table_rejects_duplicate_names() {
-        let error = GameplayTagsSettings::parse_tag_table(
+    fn load_tag_table_from_path_adds_invalid_name_context() {
+        let dir = std::env::temp_dir();
+        let path = dir.join("bevy_gameplay_tag_invalid_name_test.json");
+        std::fs::write(
+            &path,
+            r#"[{"tag_name":"Ability..Skill","description":"invalid"}]"#,
+        )
+        .unwrap();
+
+        let error = GameplayTagsSettings::load_tag_table_from_path(&path).unwrap_err();
+        std::fs::remove_file(&path).ok();
+
+        assert!(matches!(
+            error,
+            GameplayTagsLoadError::InvalidTagNameAtPath { .. }
+        ));
+    }
+
+    #[test]
+    fn load_tag_table_from_path_adds_duplicate_name_context() {
+        let dir = std::env::temp_dir();
+        let path = dir.join("bevy_gameplay_tag_duplicate_name_test.json");
+        std::fs::write(
+            &path,
             r#"[
                 {"tag_name":"Ability.Skill.Fire","description":"first"},
                 {"tag_name":"Ability.Skill.Fire","description":"second"}
             ]"#,
         )
-        .unwrap_err();
+        .unwrap();
+
+        let error = GameplayTagsSettings::load_tag_table_from_path(&path).unwrap_err();
+        std::fs::remove_file(&path).ok();
+
         assert!(matches!(
             error,
-            GameplayTagsLoadError::DuplicateTagName(tag_name) if tag_name == "Ability.Skill.Fire"
+            GameplayTagsLoadError::DuplicateTagNameAtPath { ref tag_name, .. }
+                if tag_name == "Ability.Skill.Fire"
         ));
     }
 

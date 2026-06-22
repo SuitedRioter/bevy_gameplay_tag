@@ -17,7 +17,7 @@
 //!
 //! ```rust,no_run
 //! use bevy::prelude::*;
-//! use bevy_gameplay_tag::{GameplayTagsPlugin, GameplayTagCountContainer};
+//! use bevy_gameplay_tag::{GameplayTagCountContainer, GameplayTagsPlugin};
 //!
 //! fn main() {
 //!     App::new()
@@ -40,6 +40,24 @@
 //! - [`GameplayTagsManager`]: Global resource managing the tag hierarchy
 //! - [`GameplayTagsPlugin`]: Bevy plugin for initialization
 //!
+//! ## Typed tag helpers
+//!
+//! ```rust
+//! use bevy_gameplay_tag::{gameplay_tag, GameplayTag};
+//!
+//! mod tags {
+//!     use bevy_gameplay_tag::gameplay_tag_names;
+//!
+//!     gameplay_tag_names! {
+//!         pub DAMAGED = "Status.Damaged";
+//!         pub BUFF_STRENGTH = "Buff.Strength";
+//!     }
+//! }
+//!
+//! let damaged: GameplayTag = gameplay_tag!(tags::DAMAGED);
+//! assert_eq!(damaged.as_str(), "Status.Damaged");
+//! ```
+//!
 //! ## Examples
 //!
 //! See the [examples directory](https://github.com/SuitedRioter/bevy_gameplay_tag/tree/main/examples)
@@ -51,6 +69,29 @@ pub mod gameplay_tag_count_container;
 pub mod gameplay_tag_requirements;
 pub mod gameplay_tags_manager;
 pub mod gameplay_tags_plugin;
+
+/// Build a [`GameplayTag`] from a string expression.
+///
+/// This is a lightweight convenience macro for places where you want clearer call sites
+/// without spelling `GameplayTag::new(...)` repeatedly.
+#[macro_export]
+macro_rules! gameplay_tag {
+    ($name:expr) => {
+        $crate::GameplayTag::new($name)
+    };
+}
+
+/// Define a group of gameplay tag name constants.
+///
+/// Use this inside a `mod tags { ... }` block to keep tag strings centralized and easy to refactor.
+#[macro_export]
+macro_rules! gameplay_tag_names {
+    ($( $vis:vis $name:ident = $value:literal; )+ $(,)?) => {
+        $(
+            $vis const $name: &str = $value;
+        )+
+    };
+}
 
 // Re-export commonly used types
 pub use gameplay_tag::{GameplayTag, InvalidTagName};

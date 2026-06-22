@@ -89,16 +89,25 @@ println!("Loaded {} tag rows", rows.len());
 The simplest way to avoid scattered string literals and get easy refactoring is to collect all tag names into one constants module:
 
 ```rust
+use bevy_gameplay_tag::{gameplay_tag, gameplay_tag_names};
+
 mod tags {
-    pub const DAMAGED: &str = "Status.Damaged";
-    pub const BUFF_STRENGTH: &str = "Buff.Strength";
-    pub const SILENCE: &str = "Status.Debuff.Silence";
+    use super::gameplay_tag_names;
+
+    gameplay_tag_names! {
+        pub DAMAGED = "Status.Damaged";
+        pub BUFF_STRENGTH = "Buff.Strength";
+        pub SILENCE = "Status.Debuff.Silence";
+    }
 }
 ```
 
 Then access tags through the manager to confirm they are actually registered:
 
 ```rust
+use bevy::prelude::*;
+use bevy_gameplay_tag::{gameplay_tag, GameplayTagsManager};
+
 // Option A — Optional: returns None if the tag is not in the registry
 if let Some(damage) = tags_manager.get_tag(tags::DAMAGED) {
     tag_container.update_tag_count(&damage, 1, &tags_manager, &mut commands, entity);
@@ -107,11 +116,14 @@ if let Some(damage) = tags_manager.get_tag(tags::DAMAGED) {
 // Option B — Assertive: panics at startup if the tag is missing from the JSON
 fn setup(tags_manager: Res<GameplayTagsManager>) {
     let damage = tags_manager.expect_tag(tags::DAMAGED);
-    // use `damage` from here on
+    let buff = gameplay_tag!(tags::BUFF_STRENGTH);
+    // use `damage` or `buff` from here on
 }
 ```
 
 Keeping tag strings in one `mod tags` block means a rename is a one-line change and typos surface at compile time via `rustc --check` on the constants.
+
+If you prefer not to write `GameplayTag::new(...)` repeatedly, use the lightweight `gameplay_tag!(...)` helper macro for clearer call sites.
 
 ## API map
 
@@ -291,10 +303,35 @@ For convenience, `GameplayTagQuery` also provides:
 
 - `GameplayTag::try_new(...)` validates tag names up front and rejects empty names, leading/trailing dots, repeated separators, and non-`[A-Za-z0-9_]` segments.
 - `GameplayTagsSettings::parse_tag_table(...)` and `GameplayTagsSettings::load_tag_table_from_path(...)` validate all rows and return explicit errors for invalid JSON, invalid tag names, and duplicate tag definitions.
+- `GameplayTagsManager::require_tag(...)` returns a structured error when a required tag is not registered; `expect_tag(...)` uses the same error path and only adds the panic boundary.
 - `GameplayTagsPlugin` still uses log-based initialization. If file loading or JSON parsing fails during plugin setup, the crate logs the error and falls back to an empty tag table.
 - If you need explicit failure handling, use `GameplayTagsSettings::parse_tag_table(...)` or `GameplayTagsSettings::load_tag_table_from_path(...)` before starting your app.
 - The crate currently uses runtime tag strings rather than generated constants or compile-time validation.
 - Some rustdoc examples are intentionally marked `ignore` because they require a populated `GameplayTagsManager` context.
+
+### Common configuration errors
+
+```rust
+use bevy_gameplay_tag::{GameplayTagsLoadError, GameplayTagsManager, GameplayTagsSettings};
+
+let duplicate = GameplayTagsSettings::parse_tag_table(
+    r#"[
+        {"tag_name":"Ability.Skill.Fire","description":"first"},
+        {"tag_name":"Ability.Skill.Fire","description":"second"}
+    ]"#,
+);
+assert!(matches!(duplicate, Err(GameplayTagsLoadError::DuplicateTagName(_))));
+
+let invalid = GameplayTagsSettings::parse_tag_table(
+    r#"[{"tag_name":"Ability..Skill","description":"invalid"}]"#,
+);
+assert!(matches!(invalid, Err(GameplayTagsLoadError::InvalidTagName(_))));
+
+# let app = bevy::prelude::App::new();
+# let manager: &GameplayTagsManager = unimplemented!();
+let missing = manager.require_tag("Ability.Skill.Ice");
+assert!(matches!(missing, Err(GameplayTagsLoadError::UnknownTagName(_))));
+```
 
 ## Example app
 

@@ -1,15 +1,19 @@
 use bevy::prelude::*;
 use bevy_gameplay_tag::{
-    GameplayTag, GameplayTagCountContainer, GameplayTagEventType, GameplayTagsManager,
-    GameplayTagsPlugin, OnGameplayEffectTagCountChanged,
+    gameplay_tag, gameplay_tag_names, GameplayTagCountContainer, GameplayTagEventType,
+    GameplayTagsManager, GameplayTagsPlugin, OnGameplayEffectTagCountChanged,
 };
 use bevy_inspector_egui::{bevy_egui::EguiPlugin, quick::WorldInspectorPlugin};
 
 /// Tag name constants — keep all tag strings in one place.
 /// Use `tags_manager.get_tag(tags::DAMAGED)` for a registry-validated lookup.
 mod tags {
-    pub const DAMAGED: &str = "Status.Damaged";
-    pub const BUFF_STRENGTH: &str = "Buff.Strength";
+    use super::gameplay_tag_names;
+
+    gameplay_tag_names! {
+        pub DAMAGED = "Status.Damaged";
+        pub BUFF_STRENGTH = "Buff.Strength";
+    }
 }
 
 fn main() {
@@ -89,7 +93,7 @@ fn apply_damage_system(
     keyboard: Res<ButtonInput<KeyCode>>,
 ) {
     if keyboard.just_pressed(KeyCode::Space) {
-        let damage_tag = GameplayTag::new(tags::DAMAGED);
+        let damage_tag = gameplay_tag!(tags::DAMAGED);
         for (entity, name, mut tag_container) in query.iter_mut() {
             if name.as_str() == "Player" {
                 info!("玩家受到伤害!");
@@ -105,7 +109,7 @@ fn apply_buff_system(
     mut commands: Commands,
     keyboard: Res<ButtonInput<KeyCode>>,
 ) {
-    let buff_tag = GameplayTag::new(tags::BUFF_STRENGTH);
+    let buff_tag = gameplay_tag!(tags::BUFF_STRENGTH);
 
     if keyboard.just_pressed(KeyCode::KeyB) {
         for (entity, name, mut tag_container) in query.iter_mut() {
@@ -134,8 +138,8 @@ fn display_tag_counts(
     keyboard: Res<ButtonInput<KeyCode>>,
 ) {
     if keyboard.just_pressed(KeyCode::KeyI) {
-        let damage_tag = GameplayTag::new(tags::DAMAGED);
-        let buff_tag = GameplayTag::new(tags::BUFF_STRENGTH);
+        let damage_tag = gameplay_tag!(tags::DAMAGED);
+        let buff_tag = gameplay_tag!(tags::BUFF_STRENGTH);
 
         info!("=== 标签计数信息 ===");
         for (name, tag_container) in query.iter() {
