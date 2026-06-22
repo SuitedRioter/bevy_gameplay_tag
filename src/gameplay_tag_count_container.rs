@@ -68,6 +68,11 @@ impl GameplayTagCountContainer {
             .is_some_and(|&count| count > 0)
     }
 
+    #[inline]
+    pub fn has_tag(&self, tag_to_check: &GameplayTag) -> bool {
+        self.has_matching_gameplay_tag(tag_to_check)
+    }
+
     ///
     /// Checks if all the gameplay tags in the provided `tag_container` are present and have a non-zero count in the current object's tag count map.
     ///
@@ -100,6 +105,11 @@ impl GameplayTagCountContainer {
         true
     }
 
+    #[inline]
+    pub fn has_all(&self, tag_container: &GameplayTagContainer) -> bool {
+        self.has_all_matching_gameplay_tags(tag_container)
+    }
+
     ///
     /// Determines if the current object has any gameplay tags that match those in the provided `tag_container`.
     ///
@@ -130,6 +140,11 @@ impl GameplayTagCountContainer {
         }
 
         false
+    }
+
+    #[inline]
+    pub fn has_any(&self, tag_container: &GameplayTagContainer) -> bool {
+        self.has_any_matching_gameplay_tags(tag_container)
     }
 
     ///
@@ -628,5 +643,26 @@ mod tests {
         assert!(!container.explicit_tags.has_tag_exact(&fire));
         assert!(!container.explicit_tags.has_tag(&skill));
         assert!(!container.has_matching_gameplay_tag(&ability));
+    }
+
+    #[test]
+    fn alias_methods_match_existing_tag_checks() {
+        let tags_manager = test_tags_manager();
+        let fire = GameplayTag::new("Ability.Skill.Fire");
+        let ability = GameplayTag::new("Ability");
+
+        let mut world = World::new();
+        let entity = world.spawn_empty().id();
+        let mut queue = CommandQueue::default();
+        let mut commands = Commands::new(&mut queue, &world);
+        let mut container = GameplayTagCountContainer::new();
+        container.update_tag_count(&fire, 1, &tags_manager, &mut commands, entity);
+
+        let mut query_tags = GameplayTagContainer::new();
+        query_tags.add_tag(ability.clone(), &tags_manager);
+
+        assert_eq!(container.has_tag(&ability), container.has_matching_gameplay_tag(&ability));
+        assert_eq!(container.has_all(&query_tags), container.has_all_matching_gameplay_tags(&query_tags));
+        assert_eq!(container.has_any(&query_tags), container.has_any_matching_gameplay_tags(&query_tags));
     }
 }

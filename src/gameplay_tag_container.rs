@@ -603,6 +603,10 @@ impl GameplayTagQuery {
         query
     }
 
+    pub fn match_any(tags: &GameplayTagContainer) -> Self {
+        Self::make_query_match_any_tags(tags)
+    }
+
     /// 匹配所有标签
     pub fn make_query_match_all_tags(tags: &GameplayTagContainer) -> Self {
         let mut expr = GameplayTagQueryExpression::new();
@@ -613,6 +617,10 @@ impl GameplayTagQuery {
         query
     }
 
+    pub fn match_all(tags: &GameplayTagContainer) -> Self {
+        Self::make_query_match_all_tags(tags)
+    }
+
     /// 不匹配任何标签
     pub fn make_query_match_no_tags(tags: &GameplayTagContainer) -> Self {
         let mut expr = GameplayTagQueryExpression::new();
@@ -621,6 +629,10 @@ impl GameplayTagQuery {
         let mut query = Self::new();
         query.build(expr);
         query
+    }
+
+    pub fn match_none(tags: &GameplayTagContainer) -> Self {
+        Self::make_query_match_no_tags(tags)
     }
 
     //如果为空，我们认为就匹配任何标签
@@ -670,5 +682,16 @@ mod tests {
         assert!(container.has_tag(&skill));
         assert!(!container.has_tag_exact(&ability));
         assert_eq!(container.parent_tags, vec![ability, skill]);
+    }
+
+    #[test]
+    fn query_aliases_match_existing_constructors() {
+        let tags_manager = test_tags_manager();
+        let mut tags = GameplayTagContainer::new();
+        tags.add_tag(GameplayTag::new("Ability.Skill.Fire"), &tags_manager);
+
+        assert_eq!(GameplayTagQuery::match_any(&tags), GameplayTagQuery::make_query_match_any_tags(&tags));
+        assert_eq!(GameplayTagQuery::match_all(&tags), GameplayTagQuery::make_query_match_all_tags(&tags));
+        assert_eq!(GameplayTagQuery::match_none(&tags), GameplayTagQuery::make_query_match_no_tags(&tags));
     }
 }

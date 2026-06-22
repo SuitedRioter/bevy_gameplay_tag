@@ -27,9 +27,13 @@ impl GameplayTagsPlugin {
         Self { data_path: None }
     }
 
-    pub fn with_data_path(data_path: String) -> Self {
+    pub fn with_data_path(data_path: impl Into<String>) -> Self {
         GameplayTagsPlugin {
-            data_path: Some(data_path),
+            data_path: Some(data_path.into()),
         }
+    }
+
+    pub fn from_path(data_path: impl Into<String>) -> Self {
+        Self::with_data_path(data_path)
     }
 }

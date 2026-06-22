@@ -10,7 +10,11 @@ pub struct GameplayTagRequirements {
 }
 
 impl GameplayTagRequirements {
-    pub fn new(
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    pub fn from_parts(
         require: GameplayTagContainer,
         ignore: GameplayTagContainer,
         query: GameplayTagQuery,
@@ -22,6 +26,31 @@ impl GameplayTagRequirements {
         }
     }
 
+    pub fn require_tags(&self) -> &GameplayTagContainer {
+        &self.require_tags
+    }
+
+    pub fn require_tags_mut(&mut self) -> &mut GameplayTagContainer {
+        &mut self.require_tags
+    }
+
+    pub fn ignore_tags(&self) -> &GameplayTagContainer {
+        &self.ignore_tags
+    }
+
+    pub fn ignore_tags_mut(&mut self) -> &mut GameplayTagContainer {
+        &mut self.ignore_tags
+    }
+
+    pub fn query(&self) -> &GameplayTagQuery {
+        &self.tag_query
+    }
+
+    pub fn with_query(mut self, query: GameplayTagQuery) -> Self {
+        self.tag_query = query;
+        self
+    }
+
     pub fn is_empty(&self) -> bool {
         self.require_tags.is_empty() && self.ignore_tags.is_empty() && self.tag_query.is_empty()
     }
@@ -31,6 +60,10 @@ impl GameplayTagRequirements {
         let has_ignore_met = container_to_check.has_any(&self.ignore_tags);
         let has_query_met = self.tag_query.is_empty() || self.tag_query.matches(container_to_check);
         has_require_met && !has_ignore_met && has_query_met
+    }
+
+    pub fn matches(&self, container_to_check: &GameplayTagContainer) -> bool {
+        self.requirements_met(container_to_check)
     }
 
     pub fn convert_tag_fields_to_tag_query(&self) -> GameplayTagQuery {
@@ -70,6 +103,10 @@ impl GameplayTagRequirements {
         query.build(root_expression);
         query
     }
+
+    pub fn to_query(&self) -> GameplayTagQuery {
+        self.convert_tag_fields_to_tag_query()
+    }
 }
 
 #[cfg(test)]
@@ -106,21 +143,21 @@ mod tests {
     #[test]
     fn is_empty_only_when_all_sources_are_empty() {
         let tags_manager = test_tags_manager();
-        let empty = GameplayTagRequirements::new(
+        let empty = GameplayTagRequirements::from_parts(
             GameplayTagContainer::new(),
             GameplayTagContainer::new(),
             GameplayTagQuery::new(),
         );
         assert!(empty.is_empty());
 
-        let require_only = GameplayTagRequirements::new(
+        let require_only = GameplayTagRequirements::from_parts(
             container_with_tags(&tags_manager, &["Ability.Skill.Fire"]),
             GameplayTagContainer::new(),
             GameplayTagQuery::new(),
         );
         assert!(!require_only.is_empty());
 
-        let ignore_only = GameplayTagRequirements::new(
+        let ignore_only = GameplayTagRequirements::from_parts(
             GameplayTagContainer::new(),
             container_with_tags(&tags_manager, &["Status.Debuff.Silence"]),
             GameplayTagQuery::new(),
@@ -131,7 +168,7 @@ mod tests {
     #[test]
     fn requirements_met_handles_require_and_ignore_tags() {
         let tags_manager = test_tags_manager();
-        let requirements = GameplayTagRequirements::new(
+        let requirements = GameplayTagRequirements::from_parts(
             container_with_tags(&tags_manager, &["Ability.Skill.Fire"]),
             container_with_tags(&tags_manager, &["Status.Debuff.Silence"]),
             GameplayTagQuery::new(),
@@ -152,7 +189,7 @@ mod tests {
     #[test]
     fn convert_tag_fields_to_tag_query_matches_requirements_semantics() {
         let tags_manager = test_tags_manager();
-        let require_only = GameplayTagRequirements::new(
+        let require_only = GameplayTagRequirements::from_parts(
             container_with_tags(&tags_manager, &["Ability.Skill.Fire"]),
             GameplayTagContainer::new(),
             GameplayTagQuery::new(),
@@ -163,7 +200,7 @@ mod tests {
         assert!(require_query.matches(&matching));
         assert!(!require_query.matches(&missing));
 
-        let ignore_only = GameplayTagRequirements::new(
+        let ignore_only = GameplayTagRequirements::from_parts(
             GameplayTagContainer::new(),
             container_with_tags(&tags_manager, &["Status.Debuff.Silence"]),
             GameplayTagQuery::new(),
@@ -172,5 +209,30 @@ mod tests {
         assert!(ignore_query.matches(&matching));
         let silenced = container_with_tags(&tags_manager, &["Status.Debuff.Silence"]);
         assert!(!ignore_query.matches(&silenced));
+    }
+
+    #[test]
+    fn alias_methods_match_existing_requirements_behavior() {
+        let tags_manager = test_tags_manager();
+        let mut requirements = GameplayTagRequirements::new();
+        requirements
+            .require_tags_mut()
+            .add_tag(GameplayTag::new("Ability.Skill.Fire"), &tags_manager);
+        requirements
+            .ignore_tags_mut()
+            .add_tag(GameplayTag::new("Status.Debuff.Silence"), &tags_manager);
+
+        let allowed = container_with_tags(&tags_manager, &["Ability.Skill.Fire"]);
+        let blocked = container_with_tags(
+            &tags_manager,
+            &["Ability.Skill.Fire", "Status.Debuff.Silence"],
+        );
+
+        assert_eq!(requirements.matches(&allowed), requirements.requirements_met(&allowed));
+        assert_eq!(requirements.matches(&blocked), requirements.requirements_met(&blocked));
+        assert_eq!(requirements.to_query(), requirements.convert_tag_fields_to_tag_query());
+        assert_eq!(requirements.require_tags(), &container_with_tags(&tags_manager, &["Ability.Skill.Fire"]));
+        assert_eq!(requirements.ignore_tags(), &container_with_tags(&tags_manager, &["Status.Debuff.Silence"]));
+        assert!(requirements.query().is_empty());
     }
 }

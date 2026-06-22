@@ -1,13 +1,8 @@
 use bevy::prelude::*;
 use bevy::time::common_conditions::on_timer;
 use bevy_gameplay_tag::{
-    gameplay_tag::GameplayTag,
-    gameplay_tag_container::GameplayTagContainer,
-    gameplay_tag_count_container::{
-        GameplayTagCountContainer, GameplayTagEventType, OnGameplayEffectTagCountChanged,
-    },
-    gameplay_tags_manager::GameplayTagsManager,
-    gameplay_tags_plugin::GameplayTagsPlugin,
+    GameplayTag, GameplayTagContainer, GameplayTagCountContainer, GameplayTagEventType,
+    GameplayTagsManager, GameplayTagsPlugin, OnGameplayEffectTagCountChanged,
 };
 use bevy_inspector_egui::{bevy_egui::EguiPlugin, quick::WorldInspectorPlugin};
 use std::time::Duration;

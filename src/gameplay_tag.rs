@@ -1,4 +1,4 @@
-use std::fmt::Debug;
+use std::fmt::{Debug, Display};
 use std::hash::{Hash, Hasher};
 
 use string_cache::DefaultAtom as FName;
@@ -31,6 +31,30 @@ impl Debug for GameplayTag {
     }
 }
 
+impl Display for GameplayTag {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(self.as_str())
+    }
+}
+
+impl From<&str> for GameplayTag {
+    fn from(value: &str) -> Self {
+        Self::new(value)
+    }
+}
+
+impl From<String> for GameplayTag {
+    fn from(value: String) -> Self {
+        Self::new(&value)
+    }
+}
+
+impl AsRef<str> for GameplayTag {
+    fn as_ref(&self) -> &str {
+        self.as_str()
+    }
+}
+
 impl GameplayTag {
     pub fn new(full_name: &str) -> GameplayTag {
         GameplayTag {
@@ -39,7 +63,15 @@ impl GameplayTag {
     }
 
     pub fn get_tag_name(&self) -> &str {
+        self.as_str()
+    }
+
+    pub fn as_str(&self) -> &str {
         &self.tag_name
+    }
+
+    pub fn name(&self) -> &str {
+        self.as_str()
     }
 
     pub fn is_valid(&self) -> bool {

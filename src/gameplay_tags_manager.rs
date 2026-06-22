@@ -4,8 +4,44 @@ use bevy::platform::collections::HashMap;
 use bevy::prelude::{ChildOf, Children, Component, Entity, FromWorld, Name, Resource, World};
 use bevy::log::error;
 use serde::{Deserialize, Serialize};
-use std::fs::read_to_string;
+use std::{fs::read_to_string, io};
 use string_cache::DefaultAtom as FName;
+
+#[derive(Debug)]
+pub enum GameplayTagsLoadError {
+    Io(io::Error),
+    Parse(serde_json::Error),
+}
+
+impl std::fmt::Display for GameplayTagsLoadError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            GameplayTagsLoadError::Io(error) => write!(f, "failed to read tag data: {error}"),
+            GameplayTagsLoadError::Parse(error) => write!(f, "failed to parse tag data: {error}"),
+        }
+    }
+}
+
+impl std::error::Error for GameplayTagsLoadError {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        match self {
+            GameplayTagsLoadError::Io(error) => Some(error),
+            GameplayTagsLoadError::Parse(error) => Some(error),
+        }
+    }
+}
+
+impl From<io::Error> for GameplayTagsLoadError {
+    fn from(value: io::Error) -> Self {
+        GameplayTagsLoadError::Io(value)
+    }
+}
+
+impl From<serde_json::Error> for GameplayTagsLoadError {
+    fn from(value: serde_json::Error) -> Self {
+        GameplayTagsLoadError::Parse(value)
+    }
+}
 
 #[derive(Resource, Debug)]
 pub struct GameplayTagsManager {
@@ -19,30 +55,23 @@ impl FromWorld for GameplayTagsManager {
             .remove_resource::<GameplayTagsSettings>()
             .unwrap_or_default();
 
-        let tag_data_table: Vec<GameplayTagTableRow> =
-            if let Some(data_path) = &tag_settings.data_path {
-                match read_to_string(data_path) {
-                    Ok(json_content) => match serde_json::from_str(&json_content) {
-                        Ok(data) => data,
-                        Err(e) => {
-                            error!("Failed to parse tag data from {}: {}", data_path, e);
-                            Vec::new()
-                        }
-                    },
-                    Err(e) => {
-                        error!("Failed to read tag data file {}: {}", data_path, e);
-                        Vec::new()
-                    }
+        let tag_data_table = if let Some(data_path) = &tag_settings.data_path {
+            match GameplayTagsSettings::load_tag_table_from_path(data_path) {
+                Ok(data) => data,
+                Err(e) => {
+                    error!("Failed to load tag data from {}: {}", data_path, e);
+                    Vec::new()
                 }
-            } else {
-                match serde_json::from_str(&tag_settings.json_data) {
-                    Ok(data) => data,
-                    Err(e) => {
-                        error!("Failed to parse tag data from json_data: {}", e);
-                        Vec::new()
-                    }
+            }
+        } else {
+            match GameplayTagsSettings::parse_tag_table(&tag_settings.json_data) {
+                Ok(data) => data,
+                Err(e) => {
+                    error!("Failed to parse tag data from json_data: {}", e);
+                    Vec::new()
                 }
-            };
+            }
+        };
 
         let root = world
             .spawn((
@@ -76,6 +105,14 @@ impl GameplayTagsManager {
         } else {
             GameplayTagContainer::new()
         }
+    }
+
+    pub fn parent_tags(&self, tag: &GameplayTag) -> GameplayTagContainer {
+        self.request_gameplay_tag_parents(tag)
+    }
+
+    pub fn parents_of(&self, tag: &GameplayTag) -> GameplayTagContainer {
+        self.request_gameplay_tag_parents(tag)
     }
 
     fn add_tag_node(&mut self, tag_name: String, world: &mut World) {
@@ -179,10 +216,10 @@ impl GameplayTagNode {
     }
 }
 
-#[derive(Debug, Deserialize, Serialize)]
-struct GameplayTagTableRow {
-    tag_name: String,
-    description: String,
+#[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq)]
+pub struct GameplayTagTableRow {
+    pub tag_name: String,
+    pub description: String,
 }
 
 #[derive(Resource, Debug)]
@@ -218,10 +255,56 @@ impl GameplayTagsSettings {
         GameplayTagsSettings::default()
     }
 
-    pub fn with_data_path(data_path: String) -> Self {
+    pub fn parse_tag_table(json_data: &str) -> Result<Vec<GameplayTagTableRow>, GameplayTagsLoadError> {
+        Ok(serde_json::from_str(json_data)?)
+    }
+
+    pub fn load_tag_table_from_path(
+        data_path: impl AsRef<std::path::Path>,
+    ) -> Result<Vec<GameplayTagTableRow>, GameplayTagsLoadError> {
+        let json_content = read_to_string(data_path)?;
+        Self::parse_tag_table(&json_content)
+    }
+
+    pub fn with_data_path(data_path: impl Into<String>) -> Self {
         GameplayTagsSettings {
-            data_path: Some(data_path),
+            data_path: Some(data_path.into()),
             json_data: String::new(),
         }
+    }
+
+    pub fn from_path(data_path: impl Into<String>) -> Self {
+        Self::with_data_path(data_path)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn parse_tag_table_returns_rows() {
+        let rows = GameplayTagsSettings::parse_tag_table(
+            r#"[{"tag_name":"Ability.Skill.Fire","description":"Fire skill"}]"#,
+        )
+        .unwrap();
+
+        assert_eq!(rows.len(), 1);
+        assert_eq!(rows[0].tag_name, "Ability.Skill.Fire");
+    }
+
+    #[test]
+    fn parse_tag_table_reports_errors() {
+        let error = GameplayTagsSettings::parse_tag_table("not json").unwrap_err();
+        assert!(matches!(error, GameplayTagsLoadError::Parse(_)));
+    }
+
+    #[test]
+    fn path_helpers_store_string_inputs() {
+        let settings = GameplayTagsSettings::with_data_path("tags.json");
+        assert_eq!(settings.data_path.as_deref(), Some("tags.json"));
+
+        let from_path = GameplayTagsSettings::from_path(String::from("tags.json"));
+        assert_eq!(from_path.data_path.as_deref(), Some("tags.json"));
     }
 }

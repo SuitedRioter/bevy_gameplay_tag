@@ -1,26 +1,26 @@
 # Bevy Gameplay Tag
 
-A powerful and flexible hierarchical gameplay tag system for the Bevy game engine, inspired by Unreal Engine's Gameplay Tag system.
+A hierarchical gameplay tag system for the Bevy game engine, inspired by Unreal Engine's Gameplay Tags.
 
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Bevy](https://img.shields.io/badge/Bevy-0.19-blue)](https://bevyengine.org)
 
 [English](README.md) | [简体中文](README_zh.md)
 
-## Features
+## What this crate provides
 
-- **Hierarchical Tag System**: Create parent-child tag relationships (e.g., `Ability.Skill.Fire`)
-- **Flexible Matching**: Support for both exact and hierarchical tag matching
-- **Reference Counting**: Track tag counts with automatic event notifications
-- **Complex Queries**: Build sophisticated tag queries with boolean logic
-- **Event-Driven**: Observer pattern for responding to tag changes
-- **JSON Configuration**: Define your tag hierarchy in external JSON files
-- **High Performance**: Optimized with string interning and binary search
-- **Type Safe**: Leverages Rust's type system for compile-time safety
+`bevy_gameplay_tag` gives you a shared vocabulary for gameplay state such as abilities, cooldowns, buffs, debuffs, factions, AI state, and item categories.
 
-## Installation
+It focuses on four core capabilities:
 
-Add this to your `Cargo.toml`:
+- **Hierarchical tags**: `Ability.Skill.Fire` also matches `Ability.Skill` and `Ability`
+- **Container queries**: test whether an entity has any/all matching tags
+- **Reference-counted tags**: support stacked effects and multiple sources contributing the same tag
+- **Declarative requirements and queries**: express allow/block rules without scattering string checks through gameplay code
+
+## Quick start
+
+Add the crate to your `Cargo.toml`:
 
 ```toml
 [dependencies]
@@ -28,168 +28,163 @@ bevy_gameplay_tag = "0.3.0"
 bevy = "0.19.0"
 ```
 
-## Quick Start
-
-### 1. Add the Plugin
+Load the plugin and spawn a tag container:
 
 ```rust
 use bevy::prelude::*;
-use bevy_gameplay_tag::GameplayTagsPlugin;
+use bevy_gameplay_tag::{GameplayTagCountContainer, GameplayTagsPlugin};
 
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
-        .add_plugins(GameplayTagsPlugin::default())
+        .add_plugins(GameplayTagsPlugin::with_data_path(
+            "assets/tag_data.json",
+        ))
+        .add_systems(Startup, setup)
         .run();
+}
+
+fn setup(mut commands: Commands) {
+    commands.spawn(GameplayTagCountContainer::new());
 }
 ```
 
-### 2. Define Your Tags (JSON)
+## Tag configuration format
 
-Create a `tag_data.json` file:
+The current loader expects a top-level JSON array. Each row contains:
+
+- `tag_name`: the full hierarchical tag name
+- `description`: free-form description text
+
+Example `tag_data.json`:
 
 ```json
 [
-  {
-    "tag_name": "Ability",
-    "description": "Root tag for all abilities"
-  },
-  {
-    "tag_name": "Ability.Skill",
-    "description": "Skills subcategory"
-  },
   {
     "tag_name": "Ability.Skill.Fire",
     "description": "Fire skill"
   },
   {
-    "tag_name": "Status.Buff",
-    "description": "Positive status effects"
+    "tag_name": "Status.Buff.Haste",
+    "description": "Movement speed increase"
   },
   {
-    "tag_name": "Status.Debuff",
-    "description": "Negative status effects"
+    "tag_name": "Status.Debuff.Silence",
+    "description": "Cannot cast abilities"
   }
 ]
 ```
 
-Load it in your app:
+If you want to validate JSON before building the Bevy app, use:
 
 ```rust
-use bevy_gameplay_tag::GameplayTagsPlugin;
+use bevy_gameplay_tag::GameplayTagsSettings;
 
-App::new()
-    .add_plugins(GameplayTagsPlugin::with_data_path(
-        "assets/tag_data.json".to_string(),
-    ))
-    .run();
+let rows = GameplayTagsSettings::parse_tag_table(json_source)?;
+println!("Loaded {} tag rows", rows.len());
 ```
 
-### 3. Use Tags in Your Game
+## API map
+
+### Primary entry points
+
+- `GameplayTag` — one immutable tag value
+- `GameplayTagContainer` — explicit tags plus inherited parent-tag matching
+- `GameplayTagCountContainer` — counted/stacked tag presence for entities
+- `GameplayTagRequirements` — required + blocked + query-based conditions
+- `GameplayTagsManager` — resource containing the loaded hierarchy
+- `GameplayTagsPlugin` — plugin that initializes the manager
+
+### Advanced entry points
+
+- `GameplayTagQuery` — prebuilt query object
+- `GameplayTagQueryExpression` — boolean expression builder for advanced filtering
+- `OnGameplayEffectTagCountChanged` — observer event fired on count changes
+- `GameplayTagEventType` — event kind (`NewOrRemoved` / `AnyCountChanged`)
+
+## Choosing the right container
+
+### `GameplayTagContainer`
+
+Use this when you want a set-like container of explicit tags and hierarchical matching.
+
+Typical use cases:
+
+- ability categories
+- faction or team labels
+- static item classification
+- simple state tags with no stacking
+
+```rust
+use bevy_gameplay_tag::{GameplayTag, GameplayTagContainer};
+
+let mut tags = GameplayTagContainer::new();
+tags.add_tag(GameplayTag::new("Ability.Skill.Fire"), &tags_manager);
+
+assert!(tags.has_tag(&GameplayTag::new("Ability")));
+assert!(tags.has_tag(&GameplayTag::new("Ability.Skill")));
+assert!(tags.has_tag_exact(&GameplayTag::new("Ability.Skill.Fire")));
+```
+
+### `GameplayTagCountContainer`
+
+Use this when the same tag can be contributed by multiple sources or needs stack counts.
+
+Typical use cases:
+
+- buff/debuff stacks
+- cooldown sources
+- temporary blocked states from several systems
+- layered gameplay effects
+
+```rust
+use bevy_gameplay_tag::GameplayTag;
+
+let tag = GameplayTag::new("Status.Buff.Haste");
+tag_container.update_tag_count(&tag, 3, &tags_manager, &mut commands, entity);
+
+assert_eq!(tag_container.get_tag_count(&tag), 3);
+assert!(tag_container.has_tag(&tag));
+```
+
+## Common tasks
+
+### Add a tag and test parent matching
+
+```rust
+use bevy_gameplay_tag::{GameplayTag, GameplayTagContainer};
+
+let fire = GameplayTag::new("Ability.Skill.Fire");
+let mut tags = GameplayTagContainer::new();
+tags.add_tag(fire.clone(), &tags_manager);
+
+assert!(tags.has_tag(&GameplayTag::new("Ability")));
+assert!(tags.has_tag(&GameplayTag::new("Ability.Skill")));
+assert!(tags.has_tag_exact(&fire));
+```
+
+### Counted tags for stacked effects
+
+```rust
+use bevy_gameplay_tag::GameplayTag;
+
+let buff = GameplayTag::new("Status.Buff.Haste");
+tag_container.update_tag_count(&buff, 1, &tags_manager, &mut commands, entity);
+tag_container.update_tag_count(&buff, 1, &tags_manager, &mut commands, entity);
+
+assert_eq!(tag_container.get_explicit_tag_count(&buff), 2);
+```
+
+### Listen for tag count changes
 
 ```rust
 use bevy::prelude::*;
-use bevy_gameplay_tag::*;
+use bevy_gameplay_tag::{
+    GameplayTagCountContainer, GameplayTagEventType, OnGameplayEffectTagCountChanged,
+};
 
-fn setup(mut commands: Commands) {
-    // Spawn an entity with a tag count container
-    commands.spawn(GameplayTagCountContainer::new());
-}
-
-fn add_tags_system(
-    mut query: Query<(Entity, &mut GameplayTagCountContainer)>,
-    tags_manager: Res<GameplayTagsManager>,
-    mut commands: Commands,
-) {
-    for (entity, mut tag_container) in query.iter_mut() {
-        let fire_skill = GameplayTag::new("Ability.Skill.Fire");
-
-        // Add a tag (increments count by 1)
-        tag_container.update_tag_count(
-            &fire_skill,
-            1,
-            &tags_manager,
-            &mut commands,
-            entity,
-        );
-
-        // Check if entity has the tag
-        if tag_container.has_matching_gameplay_tag(&fire_skill) {
-            println!("Entity has fire skill!");
-        }
-
-        // Check parent tags (hierarchical matching)
-        let ability_tag = GameplayTag::new("Ability");
-        if tag_container.has_matching_gameplay_tag(&ability_tag) {
-            println!("Entity has some ability!");
-        }
-    }
-}
-```
-
-## Core Concepts
-
-### GameplayTag
-
-The fundamental building block representing a single tag:
-
-```rust
-let tag = GameplayTag::new("Ability.Skill.Fire");
-
-// Exact matching
-tag.matches_tag_exact(&other_tag);
-
-// Hierarchical matching (Fire matches Ability.Skill)
-tag.matches_tag(&parent_tag, &tags_manager);
-```
-
-### GameplayTagContainer
-
-A collection of tags with query capabilities:
-
-```rust
-let mut container = GameplayTagContainer::new();
-
-// Add tags
-container.add_tag(fire_tag, &tags_manager);
-container.add_tag(ice_tag, &tags_manager);
-
-// Query tags
-container.has_tag(&fire_tag);              // Check for tag or parent
-container.has_tag_exact(&fire_tag);        // Exact match only
-container.has_any(&other_container);       // Any intersection
-container.has_all(&required_tags);         // All tags present
-```
-
-### GameplayTagCountContainer
-
-Reference-counted tags with event notifications:
-
-```rust
-let mut tag_container = GameplayTagCountContainer::new();
-
-// Increment tag count
-tag_container.update_tag_count(&tag, 1, &tags_manager, &mut commands, entity);
-
-// Decrement tag count
-tag_container.update_tag_count(&tag, -1, &tags_manager, &mut commands, entity);
-
-// Set absolute count
-tag_container.set_tag_count(&tag, 5, &tags_manager, &mut commands, entity);
-
-// Get current count
-let count = tag_container.get_tag_count(&tag);
-```
-
-### Tag Change Events
-
-React to tag changes using Bevy's observer pattern:
-
-```rust
 fn setup(mut commands: Commands) {
     let entity = commands.spawn(GameplayTagCountContainer::new()).id();
-
-    // Observe tag changes
     commands.entity(entity).observe(on_tag_changed);
 }
 
@@ -198,23 +193,47 @@ fn on_tag_changed(trigger: On<OnGameplayEffectTagCountChanged>) {
 
     match event.event_type {
         GameplayTagEventType::NewOrRemoved => {
-            println!("Tag {:?} was added or removed", event.tag);
+            println!("tag {:?} entered or left the active set", event.tag);
         }
         GameplayTagEventType::AnyCountChanged => {
-            println!("Tag {:?} count changed to {}", event.tag, event.new_count);
+            println!("tag {:?} count is now {}", event.tag, event.new_count);
         }
     }
 }
 ```
 
-### Complex Queries
-
-Build sophisticated tag queries with boolean logic:
+### Declarative requirements
 
 ```rust
-// Create a query expression
-let mut expr = GameplayTagQueryExpression::new();
-expr.all_tags_match()
+use bevy_gameplay_tag::{GameplayTag, GameplayTagQuery, GameplayTagRequirements};
+
+let mut requirements = GameplayTagRequirements::new();
+requirements
+    .require_tags_mut()
+    .add_tag(GameplayTag::new("Ability.Skill.Fire"), &tags_manager);
+requirements
+    .ignore_tags_mut()
+    .add_tag(GameplayTag::new("Status.Debuff.Silence"), &tags_manager);
+
+if requirements.matches(&entity_tags) {
+    println!("Entity can use the fire skill");
+}
+
+let query: GameplayTagQuery = requirements.to_query();
+```
+
+## Advanced queries
+
+For simple checks, `has_tag`, `has_any`, `has_all`, and `GameplayTagRequirements` are usually enough.
+
+Use `GameplayTagQueryExpression` when you need nested boolean logic:
+
+```rust
+use bevy_gameplay_tag::{GameplayTag, GameplayTagQuery, GameplayTagQueryExpression};
+
+let mut required = GameplayTagQueryExpression::new();
+required
+    .all_tags_match()
     .add_tag(GameplayTag::new("Ability.Skill.Fire"));
 
 let mut blocked = GameplayTagQueryExpression::new();
@@ -223,128 +242,54 @@ blocked
     .add_tag(GameplayTag::new("Status.Debuff.Silence"));
 
 let mut root = GameplayTagQueryExpression::new();
-root.all_expr_match()
-    .add_expr(expr)
-    .add_expr(blocked);
+root.all_expr_match().add_expr(required).add_expr(blocked);
 
 let mut query = GameplayTagQuery::new();
 query.build(root);
 
-// Test against a container
-if query.matches(&container) {
-    println!("Entity can cast fire skill!");
+if query.matches(&entity_tags) {
+    println!("Entity passes the advanced tag query");
 }
 ```
 
-### Tag Requirements
+For convenience, `GameplayTagQuery` also provides:
 
-Define declarative tag requirements:
+- `GameplayTagQuery::match_any(&container)`
+- `GameplayTagQuery::match_all(&container)`
+- `GameplayTagQuery::match_none(&container)`
 
-```rust
-let mut require_tags = GameplayTagContainer::new();
-require_tags.add_tag(GameplayTag::new("Ability.Skill"), &tags_manager);
+## Error handling and current limitations
 
-let mut ignore_tags = GameplayTagContainer::new();
-ignore_tags.add_tag(
-    GameplayTag::new("Status.Debuff.Silence"),
-    &tags_manager,
-);
+- `GameplayTagsPlugin` still uses log-based initialization. If file loading or JSON parsing fails during plugin setup, the crate logs the error and falls back to an empty tag table.
+- If you need explicit failure handling, use `GameplayTagsSettings::parse_tag_table(...)` or `GameplayTagsSettings::load_tag_table_from_path(...)` before starting your app.
+- The crate currently uses runtime tag strings rather than generated constants or compile-time validation.
+- Some rustdoc examples are intentionally marked `ignore` because they require a populated `GameplayTagsManager` context.
 
-let requirements = GameplayTagRequirements::new(
-    require_tags,
-    ignore_tags,
-    GameplayTagQuery::new(),
-);
+## Example app
 
-// Check if requirements are met
-if requirements.requirements_met(&entity_tags) {
-    println!("Can use ability!");
-}
-```
-
-## Use Cases
-
-### Skill System
-
-```rust
-// Define skill tags
-let fire_skill = GameplayTag::new("Ability.Skill.Fire");
-let cooldown = GameplayTag::new("Cooldown.Skill.Fire");
-
-// Cast skill
-tag_container.update_tag_count(&fire_skill, 1, &tags_manager, &mut commands, entity);
-tag_container.update_tag_count(&cooldown, 1, &tags_manager, &mut commands, entity);
-
-// Check if skill is on cooldown
-if tag_container.has_matching_gameplay_tag(&cooldown) {
-    println!("Skill is on cooldown!");
-}
-```
-
-### Buff/Debuff System
-
-```rust
-// Stack buffs with reference counting
-let strength_buff = GameplayTag::new("Status.Buff.Strength");
-
-// Add 3 stacks
-tag_container.update_tag_count(&strength_buff, 3, &tags_manager, &mut commands, entity);
-
-// Get stack count
-let stacks = tag_container.get_tag_count(&strength_buff);
-println!("Strength buff has {} stacks", stacks);
-```
-
-### State Machine
-
-```rust
-// Define states as tags
-let idle = GameplayTag::new("State.Idle");
-let running = GameplayTag::new("State.Running");
-let jumping = GameplayTag::new("State.Jumping");
-
-// Transition states
-tag_container.set_tag_count(&idle, 0, &tags_manager, &mut commands, entity);
-tag_container.set_tag_count(&running, 1, &tags_manager, &mut commands, entity);
-```
-
-### Team/Faction System
-
-```rust
-let player_team = GameplayTag::new("Teams.Player");
-let monster_team = GameplayTag::new("Teams.Monster");
-
-// Check if entities are on the same team
-if entity1_tags.has_any(&entity2_tags) {
-    println!("Same team!");
-}
-```
-
-## Performance
-
-- **String Interning**: Uses `string_cache` for efficient string storage and comparison
-- **Binary Search**: O(log n) tag lookups in sorted containers
-- **Lazy Updates**: Parent tags are updated only when necessary
-- **Efficient Counting**: HashMap-based reference counting
-
-## Examples
-
-Check out the [examples](examples/) directory for complete working examples:
+Run the included example:
 
 ```bash
 cargo run --example example
 ```
 
+The example demonstrates:
+
+- loading tags from `examples/tag_data.json`
+- attaching `GameplayTagCountContainer` to entities
+- observing tag change events
+- checking hierarchical matches at runtime
+
 ## Architecture
 
-```
+```text
 src/
 ├── lib.rs                          # Module exports
 ├── gameplay_tag.rs                 # Core tag definition
-├── gameplay_tags_manager.rs        # Tag manager
-├── gameplay_tag_container.rs       # Tag container and query system
-├── gameplay_tag_count_container.rs # Reference-counted tag container
-├── gameplay_tag_requirements.rs    # Tag requirements system
+├── gameplay_tags_manager.rs        # Tag loading and hierarchy management
+├── gameplay_tag_container.rs       # Set-style tag container and query expressions
+├── gameplay_tag_count_container.rs # Reference-counted tag container and events
+├── gameplay_tag_requirements.rs    # Declarative requirements wrapper
 └── gameplay_tags_plugin.rs         # Bevy plugin integration
 ```
 
