@@ -7,6 +7,37 @@ use crate::{
     gameplay_tag_container::GameplayTagContainer, gameplay_tags_manager::GameplayTagsManager,
 };
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct InvalidTagName {
+    name: String,
+    reason: &'static str,
+}
+
+impl InvalidTagName {
+    fn new(name: &str, reason: &'static str) -> Self {
+        Self {
+            name: name.to_string(),
+            reason,
+        }
+    }
+
+    pub fn name(&self) -> &str {
+        &self.name
+    }
+
+    pub fn reason(&self) -> &'static str {
+        self.reason
+    }
+}
+
+impl Display for InvalidTagName {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "invalid gameplay tag name '{}': {}", self.name, self.reason)
+    }
+}
+
+impl std::error::Error for InvalidTagName {}
+
 #[derive(Eq, Clone, Ord, PartialOrd)]
 pub struct GameplayTag {
     //标签完整名字
@@ -60,6 +91,47 @@ impl GameplayTag {
         GameplayTag {
             tag_name: FName::from(full_name),
         }
+    }
+
+    pub fn try_new(full_name: &str) -> Result<GameplayTag, InvalidTagName> {
+        if full_name.is_empty() {
+            return Err(InvalidTagName::new(full_name, "tag name cannot be empty"));
+        }
+
+        if full_name.starts_with('.') || full_name.ends_with('.') {
+            return Err(InvalidTagName::new(
+                full_name,
+                "tag name cannot start or end with '.'",
+            ));
+        }
+
+        if full_name.contains("..") {
+            return Err(InvalidTagName::new(
+                full_name,
+                "tag name cannot contain consecutive '.' separators",
+            ));
+        }
+
+        for segment in full_name.split('.') {
+            if segment.is_empty() {
+                return Err(InvalidTagName::new(
+                    full_name,
+                    "tag name cannot contain empty segments",
+                ));
+            }
+
+            if !segment
+                .chars()
+                .all(|ch| ch.is_ascii_alphanumeric() || ch == '_')
+            {
+                return Err(InvalidTagName::new(
+                    full_name,
+                    "each tag segment must contain only letters, numbers, or underscores",
+                ));
+            }
+        }
+
+        Ok(Self::new(full_name))
     }
 
     pub fn get_tag_name(&self) -> &str {
@@ -198,5 +270,38 @@ impl GameplayTag {
         } else {
             container_to_check.gameplay_tags.binary_search(self).is_ok()
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::GameplayTag;
+
+    #[test]
+    fn try_new_accepts_valid_hierarchical_tags() {
+        let tag = GameplayTag::try_new("Ability.Skill.Fire").unwrap();
+        assert_eq!(tag.as_str(), "Ability.Skill.Fire");
+    }
+
+    #[test]
+    fn try_new_rejects_empty_names() {
+        assert!(GameplayTag::try_new("").is_err());
+    }
+
+    #[test]
+    fn try_new_rejects_edge_dots() {
+        assert!(GameplayTag::try_new(".Ability").is_err());
+        assert!(GameplayTag::try_new("Ability.").is_err());
+    }
+
+    #[test]
+    fn try_new_rejects_consecutive_dots() {
+        assert!(GameplayTag::try_new("Ability..Fire").is_err());
+    }
+
+    #[test]
+    fn try_new_rejects_invalid_segment_characters() {
+        assert!(GameplayTag::try_new("Ability.Skill-Fire").is_err());
+        assert!(GameplayTag::try_new("Ability.Skill Fire").is_err());
     }
 }

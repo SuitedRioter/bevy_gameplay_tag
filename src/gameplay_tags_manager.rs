@@ -1,4 +1,4 @@
-use crate::gameplay_tag::GameplayTag;
+use crate::gameplay_tag::{GameplayTag, InvalidTagName};
 use crate::gameplay_tag_container::GameplayTagContainer;
 use bevy::platform::collections::HashMap;
 use bevy::prelude::{ChildOf, Children, Component, Entity, FromWorld, Name, Resource, World};
@@ -11,6 +11,8 @@ use string_cache::DefaultAtom as FName;
 pub enum GameplayTagsLoadError {
     Io(io::Error),
     Parse(serde_json::Error),
+    InvalidTagName(InvalidTagName),
+    DuplicateTagName(String),
 }
 
 impl std::fmt::Display for GameplayTagsLoadError {
@@ -18,6 +20,10 @@ impl std::fmt::Display for GameplayTagsLoadError {
         match self {
             GameplayTagsLoadError::Io(error) => write!(f, "failed to read tag data: {error}"),
             GameplayTagsLoadError::Parse(error) => write!(f, "failed to parse tag data: {error}"),
+            GameplayTagsLoadError::InvalidTagName(error) => write!(f, "{error}"),
+            GameplayTagsLoadError::DuplicateTagName(tag_name) => {
+                write!(f, "duplicate gameplay tag name '{tag_name}' in tag data")
+            }
         }
     }
 }
@@ -27,6 +33,8 @@ impl std::error::Error for GameplayTagsLoadError {
         match self {
             GameplayTagsLoadError::Io(error) => Some(error),
             GameplayTagsLoadError::Parse(error) => Some(error),
+            GameplayTagsLoadError::InvalidTagName(error) => Some(error),
+            GameplayTagsLoadError::DuplicateTagName(_) => None,
         }
     }
 }
@@ -40,6 +48,12 @@ impl From<io::Error> for GameplayTagsLoadError {
 impl From<serde_json::Error> for GameplayTagsLoadError {
     fn from(value: serde_json::Error) -> Self {
         GameplayTagsLoadError::Parse(value)
+    }
+}
+
+impl From<InvalidTagName> for GameplayTagsLoadError {
+    fn from(value: InvalidTagName) -> Self {
+        GameplayTagsLoadError::InvalidTagName(value)
     }
 }
 
@@ -113,6 +127,19 @@ impl GameplayTagsManager {
 
     pub fn parents_of(&self, tag: &GameplayTag) -> GameplayTagContainer {
         self.request_gameplay_tag_parents(tag)
+    }
+
+    pub fn has_tag_name(&self, tag_name: &str) -> bool {
+        self.tag_map.contains_key(&GameplayTag::new(tag_name))
+    }
+
+    pub fn get_tag(&self, tag_name: &str) -> Option<GameplayTag> {
+        let key = GameplayTag::new(tag_name);
+        if self.tag_map.contains_key(&key) {
+            Some(key)
+        } else {
+            None
+        }
     }
 
     fn add_tag_node(&mut self, tag_name: String, world: &mut World) {
@@ -255,8 +282,24 @@ impl GameplayTagsSettings {
         GameplayTagsSettings::default()
     }
 
+    fn validate_tag_rows(
+        rows: Vec<GameplayTagTableRow>,
+    ) -> Result<Vec<GameplayTagTableRow>, GameplayTagsLoadError> {
+        let mut seen = std::collections::HashSet::new();
+
+        for row in &rows {
+            GameplayTag::try_new(row.tag_name.as_str())?;
+            if !seen.insert(row.tag_name.clone()) {
+                return Err(GameplayTagsLoadError::DuplicateTagName(row.tag_name.clone()));
+            }
+        }
+
+        Ok(rows)
+    }
+
     pub fn parse_tag_table(json_data: &str) -> Result<Vec<GameplayTagTableRow>, GameplayTagsLoadError> {
-        Ok(serde_json::from_str(json_data)?)
+        let rows = serde_json::from_str(json_data)?;
+        Self::validate_tag_rows(rows)
     }
 
     pub fn load_tag_table_from_path(
@@ -300,7 +343,55 @@ mod tests {
     }
 
     #[test]
-    fn path_helpers_store_string_inputs() {
+    fn parse_tag_table_rejects_invalid_names() {
+        let error = GameplayTagsSettings::parse_tag_table(
+            r#"[{"tag_name":"Ability..Skill","description":"invalid"}]"#,
+        )
+        .unwrap_err();
+        assert!(matches!(error, GameplayTagsLoadError::InvalidTagName(_)));
+    }
+
+    #[test]
+    fn parse_tag_table_rejects_duplicate_names() {
+        let error = GameplayTagsSettings::parse_tag_table(
+            r#"[
+                {"tag_name":"Ability.Skill.Fire","description":"first"},
+                {"tag_name":"Ability.Skill.Fire","description":"second"}
+            ]"#,
+        )
+        .unwrap_err();
+        assert!(matches!(
+            error,
+            GameplayTagsLoadError::DuplicateTagName(tag_name) if tag_name == "Ability.Skill.Fire"
+        ));
+    }
+
+    #[test]
+    fn manager_helpers_find_registered_tags() {
+        let mut world = World::default();
+        world.insert_resource(GameplayTagsSettings {
+            json_data: r#"[
+                {"tag_name":"Ability.Skill.Fire","description":"Fire skill"}
+            ]"#
+            .to_string(),
+            data_path: None,
+        });
+
+        let manager = GameplayTagsManager::from_world(&mut world);
+
+        assert!(manager.has_tag_name("Ability.Skill.Fire"));
+        assert!(manager.has_tag_name("Ability.Skill"));
+        assert!(!manager.has_tag_name("Ability.Skill.Ice"));
+        assert_eq!(
+            manager
+                .get_tag("Ability.Skill.Fire")
+                .as_ref()
+                .map(GameplayTag::as_str),
+            Some("Ability.Skill.Fire")
+        );
+        assert!(manager.get_tag("Ability.Skill.Ice").is_none());
+    }
+
         let settings = GameplayTagsSettings::with_data_path("tags.json");
         assert_eq!(settings.data_path.as_deref(), Some("tags.json"));
 

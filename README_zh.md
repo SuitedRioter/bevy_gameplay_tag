@@ -260,6 +260,8 @@ if query.matches(&entity_tags) {
 
 ## 错误处理与当前限制
 
+- `GameplayTag::try_new(...)` 会先校验标签名，并拒绝空名称、前后带点、重复分隔符以及不符合 `[A-Za-z0-9_]` 规则的层级片段。
+- `GameplayTagsSettings::parse_tag_table(...)` 和 `GameplayTagsSettings::load_tag_table_from_path(...)` 会校验全部行，并对非法 JSON、非法标签名、重复标签定义返回显式错误。
 - `GameplayTagsPlugin` 目前仍然采用“日志式初始化”。如果插件阶段读取文件或解析 JSON 失败，会记录日志并回退到空标签表。
 - 如果你需要显式处理失败，请在启动 App 之前调用 `GameplayTagsSettings::parse_tag_table(...)` 或 `GameplayTagsSettings::load_tag_table_from_path(...)`。
 - 当前 crate 仍然使用运行时字符串标签，而不是代码生成常量或编译期校验体系。

@@ -17,12 +17,12 @@
 //!
 //! ```rust,no_run
 //! use bevy::prelude::*;
-//! use bevy_gameplay_tag::{GameplayTagsPlugin, GameplayTag, GameplayTagCountContainer};
+//! use bevy_gameplay_tag::{GameplayTagsPlugin, GameplayTagCountContainer};
 //!
 //! fn main() {
 //!     App::new()
 //!         .add_plugins(DefaultPlugins)
-//!         .add_plugins(GameplayTagsPlugin::default())
+//!         .add_plugins(GameplayTagsPlugin::with_data_path("assets/tag_data.json"))
 //!         .add_systems(Startup, setup)
 //!         .run();
 //! }
@@ -53,7 +53,7 @@ pub mod gameplay_tags_manager;
 pub mod gameplay_tags_plugin;
 
 // Re-export commonly used types
-pub use gameplay_tag::GameplayTag;
+pub use gameplay_tag::{GameplayTag, InvalidTagName};
 pub use gameplay_tag_container::{
     GameplayTagContainer, GameplayTagQuery, GameplayTagQueryExpression,
 };
@@ -61,5 +61,5 @@ pub use gameplay_tag_count_container::{
     GameplayTagCountContainer, GameplayTagEventType, OnGameplayEffectTagCountChanged,
 };
 pub use gameplay_tag_requirements::GameplayTagRequirements;
-pub use gameplay_tags_manager::{GameplayTagsManager, GameplayTagsSettings};
+pub use gameplay_tags_manager::{GameplayTagTableRow, GameplayTagsLoadError, GameplayTagsManager, GameplayTagsSettings};
 pub use gameplay_tags_plugin::GameplayTagsPlugin;

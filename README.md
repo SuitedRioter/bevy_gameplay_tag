@@ -260,6 +260,8 @@ For convenience, `GameplayTagQuery` also provides:
 
 ## Error handling and current limitations
 
+- `GameplayTag::try_new(...)` validates tag names up front and rejects empty names, leading/trailing dots, repeated separators, and non-`[A-Za-z0-9_]` segments.
+- `GameplayTagsSettings::parse_tag_table(...)` and `GameplayTagsSettings::load_tag_table_from_path(...)` validate all rows and return explicit errors for invalid JSON, invalid tag names, and duplicate tag definitions.
 - `GameplayTagsPlugin` still uses log-based initialization. If file loading or JSON parsing fails during plugin setup, the crate logs the error and falls back to an empty tag table.
 - If you need explicit failure handling, use `GameplayTagsSettings::parse_tag_table(...)` or `GameplayTagsSettings::load_tag_table_from_path(...)` before starting your app.
 - The crate currently uses runtime tag strings rather than generated constants or compile-time validation.
