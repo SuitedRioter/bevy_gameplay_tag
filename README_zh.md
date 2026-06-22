@@ -84,6 +84,35 @@ let rows = GameplayTagsSettings::parse_tag_table(json_source)?;
 println!("加载了 {} 条标签定义", rows.len());
 ```
 
+## 标签名常量推荐模式
+
+最简单的避免散落字符串字面量的方式，是把所有标签名集中到一个常量模块：
+
+```rust
+mod tags {
+    pub const DAMAGED: &str = "Status.Damaged";
+    pub const BUFF_STRENGTH: &str = "Buff.Strength";
+    pub const SILENCE: &str = "Status.Debuff.Silence";
+}
+```
+
+然后通过 manager 访问，同时确认标签已注册：
+
+```rust
+// 方式 A — 可选型：不存在时返回 None
+if let Some(damage) = tags_manager.get_tag(tags::DAMAGED) {
+    tag_container.update_tag_count(&damage, 1, &tags_manager, &mut commands, entity);
+}
+
+// 方式 B — 断言型：标签未注册时在启动阶段 panic
+fn setup(tags_manager: Res<GameplayTagsManager>) {
+    let damage = tags_manager.expect_tag(tags::DAMAGED);
+    // 后续使用 `damage`
+}
+```
+
+把所有标签字符串集中在 `mod tags` 里，重命名只需改一处，拼写错误在编译时就能发现。
+
 ## API 地图
 
 ### 推荐主入口
@@ -278,10 +307,17 @@ cargo run --example example
 示例展示了：
 
 - 从 `examples/tag_data.json` 加载标签
+- 使用 `mod tags` 常量模块集中管理标签名
 - 给实体挂载 `GameplayTagCountContainer`
-- 观察标签计数变化事件
-- 在运行时检查层级标签匹配
+- 监听标签变化事件
+- 通过键盘输入驱动状态变化
 
+| 按键 | 行为 |
+|-----|------|
+| Space | 给 Player 增加 1 层 `Status.Damaged` |
+| B | 将 `Buff.Strength` 设为 3 层 |
+| R | 移除 1 层 `Buff.Strength` |
+| I | 打印所有实体当前标签计数 |
 ## 架构概览
 
 ```text

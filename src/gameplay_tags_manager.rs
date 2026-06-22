@@ -4,25 +4,43 @@ use bevy::platform::collections::HashMap;
 use bevy::prelude::{ChildOf, Children, Component, Entity, FromWorld, Name, Resource, World};
 use bevy::log::error;
 use serde::{Deserialize, Serialize};
-use std::{fs::read_to_string, io};
+use std::{fs::read_to_string, io, path::PathBuf};
 use string_cache::DefaultAtom as FName;
 
 #[derive(Debug)]
 pub enum GameplayTagsLoadError {
     Io(io::Error),
+    IoAtPath {
+        path: PathBuf,
+        source: io::Error,
+    },
     Parse(serde_json::Error),
+    ParseAtPath {
+        path: PathBuf,
+        source: serde_json::Error,
+    },
     InvalidTagName(InvalidTagName),
     DuplicateTagName(String),
+    UnknownTagName(String),
 }
 
 impl std::fmt::Display for GameplayTagsLoadError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             GameplayTagsLoadError::Io(error) => write!(f, "failed to read tag data: {error}"),
+            GameplayTagsLoadError::IoAtPath { path, source } => {
+                write!(f, "failed to read tag data from '{}': {source}", path.display())
+            }
             GameplayTagsLoadError::Parse(error) => write!(f, "failed to parse tag data: {error}"),
+            GameplayTagsLoadError::ParseAtPath { path, source } => {
+                write!(f, "failed to parse tag data from '{}': {source}", path.display())
+            }
             GameplayTagsLoadError::InvalidTagName(error) => write!(f, "{error}"),
             GameplayTagsLoadError::DuplicateTagName(tag_name) => {
                 write!(f, "duplicate gameplay tag name '{tag_name}' in tag data")
+            }
+            GameplayTagsLoadError::UnknownTagName(tag_name) => {
+                write!(f, "gameplay tag '{tag_name}' is not registered in the tag data")
             }
         }
     }
@@ -32,9 +50,12 @@ impl std::error::Error for GameplayTagsLoadError {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         match self {
             GameplayTagsLoadError::Io(error) => Some(error),
+            GameplayTagsLoadError::IoAtPath { source, .. } => Some(source),
             GameplayTagsLoadError::Parse(error) => Some(error),
+            GameplayTagsLoadError::ParseAtPath { source, .. } => Some(source),
             GameplayTagsLoadError::InvalidTagName(error) => Some(error),
             GameplayTagsLoadError::DuplicateTagName(_) => None,
+            GameplayTagsLoadError::UnknownTagName(_) => None,
         }
     }
 }
@@ -140,6 +161,35 @@ impl GameplayTagsManager {
         } else {
             None
         }
+    }
+
+    /// Look up a registered tag and panic with a clear message if it is not found.
+    ///
+    /// Use this in startup systems where a missing tag is always a configuration error.
+    ///
+    /// ```ignore
+    /// fn setup(tags_manager: Res<GameplayTagsManager>) {
+    ///     let fire = tags_manager.expect_tag("Ability.Skill.Fire");
+    /// }
+    /// ```
+    pub fn expect_tag(&self, tag_name: &str) -> GameplayTag {
+        self.require_tag(tag_name)
+            .unwrap_or_else(|error| panic!("{error}"))
+    }
+
+    /// Look up a registered tag, returning an error if not found.
+    ///
+    /// Use this when a missing tag should be surfaced as a structured error rather than a panic.
+    ///
+    /// ```ignore
+    /// fn preflight(tags_manager: &GameplayTagsManager) -> Result<(), GameplayTagsLoadError> {
+    ///     let fire = tags_manager.require_tag("Ability.Skill.Fire")?;
+    ///     Ok(())
+    /// }
+    /// ```
+    pub fn require_tag(&self, tag_name: &str) -> Result<GameplayTag, GameplayTagsLoadError> {
+        self.get_tag(tag_name)
+            .ok_or_else(|| GameplayTagsLoadError::UnknownTagName(tag_name.to_string()))
     }
 
     fn add_tag_node(&mut self, tag_name: String, world: &mut World) {
@@ -305,8 +355,20 @@ impl GameplayTagsSettings {
     pub fn load_tag_table_from_path(
         data_path: impl AsRef<std::path::Path>,
     ) -> Result<Vec<GameplayTagTableRow>, GameplayTagsLoadError> {
-        let json_content = read_to_string(data_path)?;
-        Self::parse_tag_table(&json_content)
+        let path = data_path.as_ref();
+        let path_buf = PathBuf::from(path);
+        let json_content = read_to_string(path).map_err(|source| GameplayTagsLoadError::IoAtPath {
+            path: path_buf.clone(),
+            source,
+        })?;
+
+        Self::parse_tag_table(&json_content).map_err(|source| match source {
+            GameplayTagsLoadError::Parse(parse_source) => GameplayTagsLoadError::ParseAtPath {
+                path: path_buf,
+                source: parse_source,
+            },
+            other => other,
+        })
     }
 
     pub fn with_data_path(data_path: impl Into<String>) -> Self {
@@ -392,6 +454,30 @@ mod tests {
         assert!(manager.get_tag("Ability.Skill.Ice").is_none());
     }
 
+    #[test]
+    fn expect_tag_finds_registered_tag_and_panics_on_missing() {
+        let mut world = World::default();
+        world.insert_resource(GameplayTagsSettings {
+            json_data: r#"[
+                {"tag_name":"Ability.Skill.Fire","description":"Fire skill"}
+            ]"#
+            .to_string(),
+            data_path: None,
+        });
+
+        let manager = GameplayTagsManager::from_world(&mut world);
+
+        // found — should not panic
+        let tag = manager.expect_tag("Ability.Skill.Fire");
+        assert_eq!(tag.as_str(), "Ability.Skill.Fire");
+
+        // parent tag also accessible
+        let parent = manager.expect_tag("Ability.Skill");
+        assert_eq!(parent.as_str(), "Ability.Skill");
+    }
+
+    #[test]
+    fn path_helpers_store_string_inputs() {
         let settings = GameplayTagsSettings::with_data_path("tags.json");
         assert_eq!(settings.data_path.as_deref(), Some("tags.json"));
 

@@ -84,6 +84,35 @@ let rows = GameplayTagsSettings::parse_tag_table(json_source)?;
 println!("Loaded {} tag rows", rows.len());
 ```
 
+## Tag name constants
+
+The simplest way to avoid scattered string literals and get easy refactoring is to collect all tag names into one constants module:
+
+```rust
+mod tags {
+    pub const DAMAGED: &str = "Status.Damaged";
+    pub const BUFF_STRENGTH: &str = "Buff.Strength";
+    pub const SILENCE: &str = "Status.Debuff.Silence";
+}
+```
+
+Then access tags through the manager to confirm they are actually registered:
+
+```rust
+// Option A — Optional: returns None if the tag is not in the registry
+if let Some(damage) = tags_manager.get_tag(tags::DAMAGED) {
+    tag_container.update_tag_count(&damage, 1, &tags_manager, &mut commands, entity);
+}
+
+// Option B — Assertive: panics at startup if the tag is missing from the JSON
+fn setup(tags_manager: Res<GameplayTagsManager>) {
+    let damage = tags_manager.expect_tag(tags::DAMAGED);
+    // use `damage` from here on
+}
+```
+
+Keeping tag strings in one `mod tags` block means a rename is a one-line change and typos surface at compile time via `rustc --check` on the constants.
+
 ## API map
 
 ### Primary entry points
@@ -278,9 +307,17 @@ cargo run --example example
 The example demonstrates:
 
 - loading tags from `examples/tag_data.json`
+- collecting tag name strings in a `mod tags` constants block
 - attaching `GameplayTagCountContainer` to entities
 - observing tag change events
-- checking hierarchical matches at runtime
+- driving state changes with keyboard input
+
+| Key | Action |
+|-----|--------|
+| Space | Add 1 stack of `Status.Damaged` to Player |
+| B | Set `Buff.Strength` to 3 stacks |
+| R | Remove 1 stack of `Buff.Strength` |
+| I | Print current tag counts for all entities |
 
 ## Architecture
 
