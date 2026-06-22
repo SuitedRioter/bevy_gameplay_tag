@@ -1,5 +1,15 @@
 [
   {
+    "tag_name": "Status.Damaged",
+    "description": "受伤状态",
+    "path": ""
+  },
+  {
+    "tag_name": "Buff.Strength",
+    "description": "力量增益",
+    "path": ""
+  },
+  {
     "tag_name": "Teams.Monster",
     "description": "怪物队伍",
     "path": ""

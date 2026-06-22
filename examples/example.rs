@@ -6,7 +6,7 @@ use bevy_gameplay_tag::{
 use bevy_inspector_egui::{bevy_egui::EguiPlugin, quick::WorldInspectorPlugin};
 
 /// Tag name constants — keep all tag strings in one place.
-/// Use `tags_manager.get_tag(tags::DAMAGED)` for a registry-validated lookup.
+/// Use `tags_manager.require_tag(...)` during startup if you want to fail fast on missing JSON entries.
 mod tags {
     use super::gameplay_tag_names;
 
@@ -14,6 +14,12 @@ mod tags {
         pub DAMAGED = "Status.Damaged";
         pub BUFF_STRENGTH = "Buff.Strength";
     }
+}
+
+#[derive(Resource, Clone)]
+struct DemoTags {
+    damaged: bevy_gameplay_tag::GameplayTag,
+    buff_strength: bevy_gameplay_tag::GameplayTag,
 }
 
 fn main() {
@@ -24,12 +30,22 @@ fn main() {
         .add_plugins(GameplayTagsPlugin::with_data_path(
             "examples/tag_data.json",
         ))
-        .add_systems(Startup, (setup, print_controls))
+        .add_systems(Startup, (cache_demo_tags, setup, print_controls).chain())
         .add_systems(
             Update,
             (apply_damage_system, apply_buff_system, display_tag_counts),
         )
         .run();
+}
+
+fn cache_demo_tags(mut commands: Commands, tags_manager: Res<GameplayTagsManager>) {
+    let damaged = tags_manager.expect_tag(tags::DAMAGED);
+    let buff_strength = tags_manager.expect_tag(tags::BUFF_STRENGTH);
+
+    commands.insert_resource(DemoTags {
+        damaged,
+        buff_strength,
+    });
 }
 
 fn print_controls() {
@@ -88,16 +104,16 @@ fn on_enemy_tag_changed(trigger: On<OnGameplayEffectTagCountChanged>, query: Que
 
 fn apply_damage_system(
     mut query: Query<(Entity, &Name, &mut GameplayTagCountContainer)>,
+    tags: Res<DemoTags>,
     tags_manager: Res<GameplayTagsManager>,
     mut commands: Commands,
     keyboard: Res<ButtonInput<KeyCode>>,
 ) {
     if keyboard.just_pressed(KeyCode::Space) {
-        let damage_tag = gameplay_tag!(tags::DAMAGED);
         for (entity, name, mut tag_container) in query.iter_mut() {
             if name.as_str() == "Player" {
                 info!("玩家受到伤害!");
-                tag_container.update_tag_count(&damage_tag, 1, &tags_manager, &mut commands, entity);
+                tag_container.update_tag_count(&tags.damaged, 1, &tags_manager, &mut commands, entity);
             }
         }
     }
@@ -105,17 +121,16 @@ fn apply_damage_system(
 
 fn apply_buff_system(
     mut query: Query<(Entity, &Name, &mut GameplayTagCountContainer)>,
+    tags: Res<DemoTags>,
     tags_manager: Res<GameplayTagsManager>,
     mut commands: Commands,
     keyboard: Res<ButtonInput<KeyCode>>,
 ) {
-    let buff_tag = gameplay_tag!(tags::BUFF_STRENGTH);
-
     if keyboard.just_pressed(KeyCode::KeyB) {
         for (entity, name, mut tag_container) in query.iter_mut() {
             if name.as_str() == "Player" {
                 info!("玩家获得增益!");
-                tag_container.set_tag_count(&buff_tag, 3, &tags_manager, &mut commands, entity);
+                tag_container.set_tag_count(&tags.buff_strength, 3, &tags_manager, &mut commands, entity);
             }
         }
     }
@@ -123,10 +138,10 @@ fn apply_buff_system(
     if keyboard.just_pressed(KeyCode::KeyR) {
         for (entity, name, mut tag_container) in query.iter_mut() {
             if name.as_str() == "Player" {
-                let current_count = tag_container.get_tag_count(&buff_tag);
+                let current_count = tag_container.get_tag_count(&tags.buff_strength);
                 if current_count > 0 {
                     info!("移除1层增益,当前: {}", current_count);
-                    tag_container.update_tag_count(&buff_tag, -1, &tags_manager, &mut commands, entity);
+                    tag_container.update_tag_count(&tags.buff_strength, -1, &tags_manager, &mut commands, entity);
                 }
             }
         }
@@ -135,18 +150,18 @@ fn apply_buff_system(
 
 fn display_tag_counts(
     query: Query<(&Name, &GameplayTagCountContainer)>,
+    tags: Res<DemoTags>,
     keyboard: Res<ButtonInput<KeyCode>>,
 ) {
     if keyboard.just_pressed(KeyCode::KeyI) {
-        let damage_tag = gameplay_tag!(tags::DAMAGED);
-        let buff_tag = gameplay_tag!(tags::BUFF_STRENGTH);
+        let _ = gameplay_tag!(tags::DAMAGED);
 
         info!("=== 标签计数信息 ===");
         for (name, tag_container) in query.iter() {
             info!("实体: {}", name);
-            info!("  受伤层数: {}", tag_container.get_tag_count(&damage_tag));
-            info!("  增益层数: {}", tag_container.get_tag_count(&buff_tag));
-            if tag_container.has_matching_gameplay_tag(&damage_tag) {
+            info!("  受伤层数: {}", tag_container.get_tag_count(&tags.damaged));
+            info!("  增益层数: {}", tag_container.get_tag_count(&tags.buff_strength));
+            if tag_container.has_matching_gameplay_tag(&tags.damaged) {
                 info!("  当前处于受伤状态");
             }
         }

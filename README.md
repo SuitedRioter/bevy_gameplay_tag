@@ -113,7 +113,16 @@ if let Some(damage) = tags_manager.get_tag(tags::DAMAGED) {
     tag_container.update_tag_count(&damage, 1, &tags_manager, &mut commands, entity);
 }
 
-// Option B — Assertive: panics at startup if the tag is missing from the JSON
+// Option B — Fallible: returns a structured error instead of panicking
+fn validate_tags(tags_manager: &GameplayTagsManager) -> Result<(), Box<dyn std::error::Error>> {
+    let damage = tags_manager.require_tag(tags::DAMAGED)?;
+    let silence = tags_manager.require_tag(tags::SILENCE)?;
+    let buff = gameplay_tag!(tags::BUFF_STRENGTH);
+    let _ = (damage, silence, buff);
+    Ok(())
+}
+
+// Option C — Assertive: panics at startup if the tag is missing from the JSON
 fn setup(tags_manager: Res<GameplayTagsManager>) {
     let damage = tags_manager.expect_tag(tags::DAMAGED);
     let buff = gameplay_tag!(tags::BUFF_STRENGTH);
