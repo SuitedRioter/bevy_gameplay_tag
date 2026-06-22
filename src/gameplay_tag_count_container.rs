@@ -661,8 +661,17 @@ mod tests {
         let mut query_tags = GameplayTagContainer::new();
         query_tags.add_tag(ability.clone(), &tags_manager);
 
-        assert_eq!(container.has_tag(&ability), container.has_matching_gameplay_tag(&ability));
-        assert_eq!(container.has_all(&query_tags), container.has_all_matching_gameplay_tags(&query_tags));
-        assert_eq!(container.has_any(&query_tags), container.has_any_matching_gameplay_tags(&query_tags));
+        assert_eq!(
+            container.has_tag(&ability),
+            container.has_matching_gameplay_tag(&ability)
+        );
+        assert_eq!(
+            container.has_all(&query_tags),
+            container.has_all_matching_gameplay_tags(&query_tags)
+        );
+        assert_eq!(
+            container.has_any(&query_tags),
+            container.has_any_matching_gameplay_tags(&query_tags)
+        );
     }
 }

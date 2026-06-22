@@ -1,8 +1,8 @@
 use crate::gameplay_tag::{GameplayTag, InvalidTagName};
 use crate::gameplay_tag_container::GameplayTagContainer;
+use bevy::log::error;
 use bevy::platform::collections::HashMap;
 use bevy::prelude::{ChildOf, Children, Component, Entity, FromWorld, Name, Resource, World};
-use bevy::log::error;
 use serde::{Deserialize, Serialize};
 use std::{fs::read_to_string, io, path::PathBuf};
 use string_cache::DefaultAtom as FName;
@@ -29,18 +29,29 @@ impl std::fmt::Display for GameplayTagsLoadError {
         match self {
             GameplayTagsLoadError::Io(error) => write!(f, "failed to read tag data: {error}"),
             GameplayTagsLoadError::IoAtPath { path, source } => {
-                write!(f, "failed to read tag data from '{}': {source}", path.display())
+                write!(
+                    f,
+                    "failed to read tag data from '{}': {source}",
+                    path.display()
+                )
             }
             GameplayTagsLoadError::Parse(error) => write!(f, "failed to parse tag data: {error}"),
             GameplayTagsLoadError::ParseAtPath { path, source } => {
-                write!(f, "failed to parse tag data from '{}': {source}", path.display())
+                write!(
+                    f,
+                    "failed to parse tag data from '{}': {source}",
+                    path.display()
+                )
             }
             GameplayTagsLoadError::InvalidTagName(error) => write!(f, "{error}"),
             GameplayTagsLoadError::DuplicateTagName(tag_name) => {
                 write!(f, "duplicate gameplay tag name '{tag_name}' in tag data")
             }
             GameplayTagsLoadError::UnknownTagName(tag_name) => {
-                write!(f, "gameplay tag '{tag_name}' is not registered in the tag data")
+                write!(
+                    f,
+                    "gameplay tag '{tag_name}' is not registered in the tag data"
+                )
             }
         }
     }
@@ -340,14 +351,18 @@ impl GameplayTagsSettings {
         for row in &rows {
             GameplayTag::try_new(row.tag_name.as_str())?;
             if !seen.insert(row.tag_name.clone()) {
-                return Err(GameplayTagsLoadError::DuplicateTagName(row.tag_name.clone()));
+                return Err(GameplayTagsLoadError::DuplicateTagName(
+                    row.tag_name.clone(),
+                ));
             }
         }
 
         Ok(rows)
     }
 
-    pub fn parse_tag_table(json_data: &str) -> Result<Vec<GameplayTagTableRow>, GameplayTagsLoadError> {
+    pub fn parse_tag_table(
+        json_data: &str,
+    ) -> Result<Vec<GameplayTagTableRow>, GameplayTagsLoadError> {
         let rows = serde_json::from_str(json_data)?;
         Self::validate_tag_rows(rows)
     }
@@ -357,10 +372,11 @@ impl GameplayTagsSettings {
     ) -> Result<Vec<GameplayTagTableRow>, GameplayTagsLoadError> {
         let path = data_path.as_ref();
         let path_buf = PathBuf::from(path);
-        let json_content = read_to_string(path).map_err(|source| GameplayTagsLoadError::IoAtPath {
-            path: path_buf.clone(),
-            source,
-        })?;
+        let json_content =
+            read_to_string(path).map_err(|source| GameplayTagsLoadError::IoAtPath {
+                path: path_buf.clone(),
+                source,
+            })?;
 
         Self::parse_tag_table(&json_content).map_err(|source| match source {
             GameplayTagsLoadError::Parse(parse_source) => GameplayTagsLoadError::ParseAtPath {
